@@ -1,0 +1,20 @@
+/*-------------------------------------------------------------------*/
+/* MAN EXEC - Give help for requested command/subcommand             */
+/* Syntax: MAN <command>                                             */
+/*         MAN SET <subcommand>                                      */
+/*         MAN Query <subcommand>                                    */
+/* License: MIT - https://en.wikipedia.org/wiki/MIT_License          */
+/* Source: https://github.com/mike99mac/zvm-tools                    */
+/*-------------------------------------------------------------------*/
+'ESTATE WHICH EXEC *'
+if rc <> 0 then do
+  say "ERROR: Co-requisite WHICH EXEC not found"
+  say "See: https://github.com/mike99mac/zvm-tools"
+  exit 1
+end
+parse arg inputArgs
+whichCmd = "which" inputArgs "(h)"         /* WHICH cmd w/Help flag */
+"pipe cms" whichCmd "| var helpCmd"        /* save the help command */
+say helpCmd                                /* list it */
+helpCmd                                    /* run it */
+ 

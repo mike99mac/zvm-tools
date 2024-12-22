@@ -1,0 +1,312 @@
+/*************************************************************/
+rcode = 0
+  address 'XEDIT'
+  parse arg argstring
+  /* EXTRACT RESERVE ETMODE TERMINAL */
+  'COMMAND EXT /RESERV/ETMODE/TERM/'
+if reserved.0 ^= 0        /*Are there any reserved lines?    */
+  Then do               /*yep. so we need to unreserve them  */
+    Do I = 1 to words(reserved.1) /*look for number of lines */
+      "COMMAND SET RESERVED" "WORD"(reserved.1,I) "OFF"
+    End                   /*look for number of lines         */
+  End                   /*yep. so we need to unreserve them  */
+  address 'COMMAND' 'GLOBALV SELECT $FROM$ GET MYFROM'
+  myfrom = myfrom'*'
+Address COMMAND "GLOBALV SELECT $$EXECUT$$ GET PARMS FILELIST",
+ "ALLAUTH PROF1 PROF2 PROF4 EXECNAME MIXED ACCTYP DATETYP OPTS"
+If "WORDS"(parms) < 3 then
+  filemode = 'A'
+Else Do
+  parse var parms . . filemode
+  filemode = "LEFT"(filemode,1)
+end
+If filemode = '*' | filelist = 'FILELIST' Then Do
+  minidisk = 'YES'
+  pfkey = 'SPLAT'
+End
+Else Do
+/* Find the fully qualified directory name */
+  Address COMMAND "QUERY ACCESSED" filemode "(LIFO"
+  pull . . . dirvdev dirid .
+  If (Left(dirvdev,3) <> "DIR") Then Do
+    minidisk = 'YES'
+    pfkey = 'MINI'
+  End
+  Else Do
+    minidisk = 'NO'
+    pfkey = 'DIR'
+  End
+End
+"COMMAND LINEND OFF"
+If rc ^= 0 then do
+   rcode = rc
+   Call EXIT
+end
+  if rc ^= 0 then exit rc
+  options = 'STATS' filelist 'PROFILE' prof1 allauth 'APPEND' ,
+  mixed acctyp datetyp opts
+  options2 = 'SHARE' filelist allauth 'APPEND' mixed acctyp ,
+  datetyp opts
+  options3 = 'ALLDATES' filelist allauth 'APPEND' mixed ,
+  acctyp datetyp opts
+  execname = 'EXEC FILELIST'
+  'COMMAND SUP' ,
+  '!IMAGE OFF' ,
+  '!VARBLANK ON' ,
+  '!'
+ 
+  if datetyp = 'SHORTDATE' | datetyp = '' then
+     if myfrom = 'ALLDATES*' then msg_fmt = 'FORMAT 02'
+     else msg_fmt = 'FORMAT 01'
+  else
+     if myfrom = 'ALLDATES*' then msg_fmt = 'FORMAT 04'
+     else msg_fmt = 'FORMAT 03'
+  sort_date_cols = '144 162'
+  sort_lrec_cols = '111 120'
+  sort_mode_cols = '106 107 88 104'
+  sort_name_cols = '88 107'
+  sort_recf_cols = '109 109'
+  sort_size_cols = '133 142 122 131'
+  sort_type_cols = '97 104 88 95 106 107'
+  if myfrom ^= 'ALLDATES*' then do
+     'COMMAND SYN LINEND' ,
+     '# SWITCHA COMMAND PRES' ,
+     '#COMMAND MSGM OFF' ,
+     '#COMMAND SCOPE A' ,
+     '#:1 COMMAND DEL *' ,
+     '#COMMAND LR 210' ,
+     '#COMMAND TR 210' ,
+     '#COMMAND MSGM ON'
+     'COMMAND SYN LINEND' ,
+     '# SWITCHB COMMAND PRES' ,
+     '#CMS' execname parms '(' options2 ')' ,
+     '#COMMAND REST#COMMAND LR 210' ,
+     '#MACRO' prof2
+     end
+  else do
+     'COMMAND SYN LINEND' ,
+     '# SWITCHA COMMAND PRES' ,
+     '#COMMAND MSGM OFF' ,
+     '#COMMAND SCOPE A' ,
+     '#:1 COMMAND DEL *' ,
+     '#COMMAND REST' ,
+     '#COMMAND LR 400' ,
+     '#COMMAND TR 400' ,
+     '#COMMAND MSGM ON'
+     'COMMAND SYN LINEND' ,
+     '# SWITCHB COMMAND PRES' ,
+     '#CMS' execname parms '(' options3 ')' ,
+     '#COMMAND REST#COMMAND LR 400' ,
+     '#MACRO' prof4
+     'COMMAND GLOBALV SELECT $FROM$ SET MYFROM'
+     end
+  'COMMAND SUP' ,
+  '!SYN LINEND / SDATE CMS DMSXMS D' sort_date_cols ,
+  '/COMMAND TOP/+1' ,
+  '!SYN LINEND / SLREC CMS DMSXMS D' sort_lrec_cols ,
+  '/COMMAND TOP/+1' ,
+  '!SYN LINEND / SMODE CMS DMSXMS A' sort_mode_cols ,
+  '/COMMAND TOP/+1' ,
+  '!'
+  'COMMAND SUP' ,
+  '!SYN LINEND / SNAME CMS DMSXMS A' sort_name_cols ,
+  '/COMMAND TOP/+1' ,
+  '!SYN LINEND / SRECF CMS DMSXMS A' sort_recf_cols ,
+  '/COMMAND TOP/+1' ,
+  '!'
+  'COMMAND SUP' ,
+  '!SYN LINEND / SSIZE CMS DMSXMS D' sort_size_cols ,
+  '/COMMAND TOP/+1'
+  'COMMAND SET SYN LINEND / STYPE',
+  '/-*'||,
+  '/COMMAND CMS CMDCALL PIPE (END ?) XEDIT'||, /*read file*/
+  '|A: L 109.1 "D"'||,  /* find all directories */
+  '|SORT 88.16'||,      /* sort the directories */
+  '|B:FANIN 0 1'||,     /* keep dir info & add minidisk info */
+  '|O:FANOUT'||,        /* Send all the data to XEDIT */
+  '|TAKE 1'||,          /* Ensure correct order of events */
+  '|SPECS "-* +1" 1'||, /* Go to top of file to replace */
+  '|SUBCOM XEDIT'||,    /*  with sorted file type info */
+  '?A:'||,              /* here for minidisks */
+  '|SORT 97.8 88.8 106.1'||, /* sort by ft fn fm */
+  '|B:'||,              /* add to directory info */
+  '?O:'||,              /* Replace info with data sorted */
+  '|XEDIT'||,           /*  by file type             */
+  '/-* +1'              /* Go to the first line of data */
+  'COMMAND SYN LINEND' ,
+  '# REFRESH COMMAND PRES' ,
+  '#COMMAND MSGM OFF' ,
+  '#COMMAND SCOPE A' ,
+  '#:1 COMMAND DEL *' ,
+  '#CMS' execname parms '(' options ')' ,
+  '#COMMAND REST'
+  select
+     when pfkey = 'MINI' then do
+        'COMMAND SUP' ,
+        '!PF04 STYPE#COMMAND CUR COL' ,
+        '!PF16 STYPE#COMMAND CUR COL' ,
+        '!PF05 SDATE#COMMAND CUR COL' ,
+        '!PF17 SDATE#COMMAND CUR COL' ,
+        '!'
+        'COMMAND SUP' ,
+        '!PF10 SNAME#COMMAND CUR COL' ,
+        '!PF22' ,
+        '!PF11 MACRO EXECUTE CURSOR X$NDIR$X' ,
+        '!PF23 MACRO EXECUTE CURSOR X$NDIR$X' ,
+        '!'
+        end
+     when pfkey = 'DIR' then do
+        'COMMAND SUP' ,
+        '!PF04 MACRO CANCEL' ,
+        '!PF16 MACRO CANCEL' ,
+        '!PF05 MACRO SDIR' ,
+        '!PF17 MACRO SDIR' ,
+        '!'
+        'COMMAND SUP' ,
+        '!PF10 SWITCHA#SWITCHB#SDATE' ,
+        '!PF22 SWITCHA#SWITCHB#SDATE' ,
+        '!PF11 MACRO EXECUTE CURSOR EXEC X$NDIR$X' ,
+        '!PF23 MACRO EXECUTE CURSOR EXEC X$NDIR$X' ,
+        '!'
+        end
+     otherwise
+     'COMMAND SUP' ,
+     '!PF04 STYPE#COMMAND CUR COL' ,
+     '!PF16 STYPE#COMMAND CUR COL' ,
+     '!PF05 SDATE#COMMAND CUR COL' ,
+     '!PF17 SDATE#COMMAND CUR COL' ,
+     '!'
+     'COMMAND SUP' ,
+     '!PF10 SWITCHA#SWITCHB#SDATE' ,
+     '!PF22 SWITCHA#SWITCHB#SDATE' ,
+     '!PF11 MACRO EXECUTE CURSOR EXEC X$NDIR$X' ,
+     '!PF23 MACRO EXECUTE CURSOR EXEC X$NDIR$X' ,
+     '!'
+     end
+  'COMMAND SUP' ,                 /* PF Key settings */
+  '!PF01 COMMAND HELP CMS FILELIST' ,
+  '!PF13 MACRO HELP CMS FILELIST' ,
+  '!PF03 ONLY COMMAND QUIT' ,
+  '!PF15 ONLY COMMAND QUIT' ,
+  '!'
+  'COMMAND SUP' ,                 /* PF Key settings */
+  '!PF06 SSIZE#COMMAND CUR COL' ,
+  '!PF18 SSIZE#COMMAND CUR COL' ,
+  '!PF09 MACRO EXECUTE CURSOR EXEC FILELIST' ,
+  '/N * * ( NOFILELIST )' ,
+  '!PF21 MACRO EXECUTE CURSOR EXEC FILELIST' ,
+  '/N * * ( NOFILELIST )' ,
+  '!'
+  'COMMAND PF02 REFRESH# MACRO' prof1 argstring ||,
+  '#SDATE #COMMAND CUR COL'
+  'COMMAND PF14 REFRESH# MACRO' prof1 argstring ||,
+  '#SDATE #COMMAND CUR COL'
+  if filelist = 'FILELIST' then do
+     'COMMAND SUP' ,
+     '!PF02 REFRESH #MACRO' prof1 argstring ||,
+     '#COMMAND CUR COL' ,
+     '!PF14 REFRESH #MACRO' prof1 argstring ||,
+     '#COMMAND CUR COL' ,
+     '!'
+     'COMMAND SUP' ,
+     '!PF10 SWITCHA#SWITCHB' ,
+     '!PF22 SWITCHA#SWITCHB' ,
+     '!'
+     end
+  if myfrom ^= 'ALLDATES*' then
+  address 'COMMAND' 'XMITMSG 8613 (VAR NOHEAD NOCOMP' msg_fmt
+  else
+  address 'COMMAND' 'XMITMSG 8613 (VAR NOHEAD NOCOMP' msg_fmt
+  if etmode.1 = 'ON' then 'COMMAND ETMODE OFF'
+  'COMMAND LR 169'                     /* LRECL 169 */
+  'COMMAND TR 169'                     /* TRUNC 169 */
+  if etmode.1 = 'ON' then
+  'COMMAND ETMODE ON' /* restore ETMODE setting */
+  if terminal.1 = 'TYPEWRITER' then do
+     if minidisk = 'NO' then do
+        dirid = message.6 dirid
+        say dirid
+        end
+     say message.1
+     'COMMAND LINEN ON #'              /* LINEND ON # */
+     exit
+     end
+  'COMMAND EXT /CMD/LS/'
+  select
+     when cmdline.1 = 'OFF' then do
+        pl = -2                        /* 2 from bottom */
+        ml = 2                         /* 2 from top */
+        cl = 4                         /* 4 from top */
+        end
+     when cmdline.1 = 'TOP' then do
+        pl = -2                        /* 2 from bottom */
+        ml = 3                         /* 3 from top */
+        cl = 5                         /* 5 from top */
+        end
+     when cmdline.1 = 'ON' then do
+        pl = -5                        /* 5 from bottom */
+        ml = -3                        /* 3 from bottom */
+        cl = 3                         /* 3 from top */
+        end
+     otherwise do
+        /* cmdline = BOTTOM */
+        pl = -4                        /* 4 from bottom */
+        ml = -2                        /* 2 from bottom */
+        cl = 3                         /* 3 from top */
+        end
+     end
+  if minidisk = 'NO' then cl = cl + 1
+  tl  = cl - 1
+  tl2 = cl - 2
+  if minidisk = 'NO' then do
+     dirid = message.6 dirid
+     dirid_length = 'LENGTH'(dirid)
+     if dirid_length >= 80 then do
+        if dirid_length >= 159 then do
+           dirid2 = 'SUBSTR'(dirid,159)
+           tl3 = tl2 + 2
+           tl = tl + 1
+           'COMMAND RESER' tl3 'B NON N' dirid2
+           end
+        dirid2 = 'SUBSTR'(dirid,80)
+        tl3 = tl2 + 1
+        tl = tl + 1
+        'COMMAND RESER' tl3 'B NON N' dirid2
+        end
+     'COMMAND RESER' tl2 'B NON N' dirid
+     end
+  select
+     when pfkey = 'MINI' then do
+        'COMMAND RESER' pl 'B NON N' message.2
+        'COMMAND RESER' pl + 1 'B NON N' message.3
+        end
+     when pfkey = 'SPLAT' then do
+        'COMMAND RESER' pl  'B NON N' message.7
+        'COMMAND RESER' pl + 1 'B NON N' message.8
+        end
+     otherwise do
+        'COMMAND RESER' pl 'B NON N' message.4
+        'COMMAND RESER' pl + 1 'B NON N' message.5
+        end
+     end
+  'COMMAND RESER' tl 'B NON N' message.1 /* Set the msg line */
+  'COMMAND SUP' ,                 /* Do various SET commands */
+  '!CURL ON' cl ,                      /* CURLINE ON */
+  '!MSGL ON' ml '3' ,                  /* MSGLINE ON */
+  '!ENT IGNORE MACRO EXECUTE' ,        /* ENTER */
+  '!PRE OFF' ,                         /* PREFIX OFF */
+  '!SCAL OFF' ,                        /* SCALE OFF */
+  '!STAY ON' ,                         /* STAY ON */
+  '!TOFEOF OFF' ,                      /* TOFEOF OFF */
+  '!LINEN ON #' ,                      /* LINEND OFF */
+  '!'
+  'COMMAND SUP' ,                /* Set the colors */
+  '!COLOR * B NON N' ,           /* BLUE NONE NOHIGH */
+  '!COLOR CU G NON H' ,          /* CURLINE GREEN NONE HIGH */
+  '!COLOR F G NON H' ,           /* FILEAREA GREEN NONE HIGH */
+  '!COLOR C G NON N' ,          /* CMDLINE GREEN NONE NOHIGH */
+  '!COLOR M R NON H' ,           /* MSGLINE RED NONE HIGH */
+  '!'
+  'COMMAND CURSOR FILE 1 1'
+EXIT: /* single routine exit. */
+  exit rcode

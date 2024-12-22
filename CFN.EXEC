@@ -1,0 +1,35 @@
+/*-------------------------------------------------------------------*/
+/* CFN EXEC - Copy file changing only the file name                  */
+/* Syntax: CFN fn1 ft1 fm1 fn2                                       */
+/* License: MIT - https://en.wikipedia.org/wiki/MIT_License          */
+/* Source: https://github.com/mike99mac/zvm-tools                    */
+/*-------------------------------------------------------------------*/
+parse upper arg fn1 ft1 fm1 fn2 rest '(' options ')'
+if fn1 = "?" | fn1 = "" | fn1 = "-H" then do
+  call help
+  exit
+end
+if fn2 = "" then do
+  say "ERROR: not enough arguments
+  call help
+end
+if rest <> "" then do
+  say "ERROR: too many arguments"
+  call help
+end
+if options = "" then
+  "COPY" fn1 ft1 fm1 fn2 "= ="
+else
+  "COPY" fn1 ft1 fm1 fn2 "= = (" options
+exit rc
+ 
+/*-------------------------------------------------------------------*/
+help:
+/* Give help                                                         */
+/*-------------------------------------------------------------------*/
+say "Name:  CFN EXEC - Copy file changing only file name"
+say "Usage: CFN fn1 ft1 fm1 fn2 ['('options')']"
+say "Where: 'fn1 ft1 fm1' is the source file:"
+say "       'fn2' is the target file name
+say "       'options' add to COPY command such as 'REP' or 'OLDD'"
+ 

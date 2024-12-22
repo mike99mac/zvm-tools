@@ -1,8 +1,10 @@
 /*-------------------------------------------------------------------*/
 /* WHICH EXEC - Determine if a command is CP, CMS, or REXX EXEC      */
-/* First define CMS/CP/Xedit Commands/Query/Set global variables     */
+/* License: MIT - https://en.wikipedia.org/wiki/MIT_License          */
+/* Source: https://github.com/mike99mac/zvm-tools                    */
 /*-------------------------------------------------------------------*/
  
+/* First define CMS/CP/Xedit Commands/Query/Set global variables     */
 /* CMS commands */
 CMScmds = "BORDER CMDCALL ESERV HB NOTE RT ",
 ||"SYNMSGS CMSBATCH ESTATE Help NUCXDROP RTNDrop SYNonym ",
@@ -133,7 +135,7 @@ CPquery = "CPLEVEL FENCES LOGmsg PER SDF TERMinal ",
  
 /* XEDIT QUERY commands */
 Xquery = "COLumn ETMODE LIne PACK SELect TEXT ",
-||"CTLchar FILler LINENd PAn Seq8 TOF COLPtr ",
+||"CTLchar FILler LINENd PAn TOF COLPtr ",
 ||"CURLine FMode LRecl PENDing SERial TOFEOF ",
 ||"CURSor FName LScreen PFn SHADow TOL ",
 ||"ACTion DISPLay FType MACRO PName SIDcode TRANSLat ",
@@ -204,7 +206,6 @@ end
 if cmd == '' | cmd == "?" | cmd == "-H" then
   call help
  
-/* trace i */
 /* set flags to off then parse them, if any */
 debug = "no"
 helpFlag = "no"
@@ -229,11 +230,11 @@ select
 end
  
 /* if we fall through command was not found */
-call debugMsg("main(): fell through - command not found")
+call debugMsg("main(): fell through - command" cmd arg1 "not found")
 exit 1                                     /* WHICH EXEC */
  
 /*-------------------------------------------------------------------*/
-parseFlags:
+parseFlags: procedure expose flags debug helpFlag verbose doTrace
 /* parse flags passed in, if any                                     */
 /*-------------------------------------------------------------------*/
 numFlags = LENGTH(flags)
@@ -244,6 +245,8 @@ do i = 1 to numFlags
       debug = "yes"
     when nextFlag = "H" then
       helpFlag = "yes"
+    when nextFlag = "S" then               /* silent mode */
+      verbose = "silent"
     when nextFlag = "T" then               /* turn trace on */
       doTrace = "yes"
     when nextFlag = "V" then
@@ -257,9 +260,8 @@ end
 return                                     /* parseFlags() */
  
 /*-------------------------------------------------------------------*/
-/* debugMsg: procedure expose debug */
-debugMsg:
-/* issue message in debug mode                                       */
+debugMsg: procedure expose debug
+/* Issue message in debug mode                                       */
 /*-------------------------------------------------------------------*/
 if debug = "yes" then do
   parse arg msg
@@ -274,19 +276,23 @@ giveResult: procedure expose debug helpFlag verbose
 /* Arg 2: Scope - QUERY, SET or CMD                                  */
 /* Args 3-n: Fully qualified command - e.g. "q da" => QUERY DASD     */
 /*-------------------------------------------------------------------*/
-parse arg cmdType expandedCmd
- 
+parse arg cmdType scope expandedCmd
+call debugMsg("cmdType:" cmdType "scope:" scope,
+  "expandedCmd" expandedCmd "helpFlag:" helpFlag)
 if helpFlag = "yes" then                   /* convert to HELP cmd */
   if cmdType = "XEDIT" then
-    say "HELP" expandedCmd
+    if scope = "CMD" then
+      say "HELP" scope expandedCmd
+    else                                   /* QUERY or SET */
+      say "HELP" cmdType||scope expandedCmd
   else if scope = "CMD" then
-    say expandedCmd
+    say "HELP" cmdType expandedCmd
   else                                     /* prefix command type */
     say "HELP" cmdType||expandedCmd
-else if verbose = "yes" then               /* give more info */
-  say expandedCmd "is a" cmdType "command"
-else                                       /* just command type */
+else if verbose = "silent" then            /* give less info */
   say cmdType
+else                                       /* normal verbosity */
+  say expandedCmd "is a" cmdType "command"
 exit                                       /* giveResult() */
  
 /*-------------------------------------------------------------------*/
@@ -318,14 +324,11 @@ end
 /* if we fall through there is a match */
 call debugMsg("checkArg(): MATCH!")
 tmpltUC = translate(tmplt)                 /* upper case command */
-if scope <> "CMD" then                     /* QUERY or SET command */
-  fullCmd = scope tmpltUC
-else                                       /* just one command */
-  fullCmd = tmpltUC
+fullCmd = tmpltUC
 call debugMsg("cmdType:" cmdType "fullCmd:" fullCmd)
 call giveResult(cmdType scope fullCmd)     /* never returns */
 say "checkArg() INTERNAL ERROR: not supposed to get here!!!"
-exit 13
+exit 13                                    /* bad luck */
  
 /*-------------------------------------------------------------------*/
 queryCmd: procedure,
@@ -440,6 +443,7 @@ say "     | WHICH SET   subcommand ['('FLAGS')']"
 say "Where: FLAGS can be:"
 say "             D: debug"
 say "             H: create help command"
+say "             S: silent - negative verbosity"
 say "             T: trace"
 say "             V: verbose - return expanded command"
 exit 2

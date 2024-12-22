@@ -1,0 +1,78 @@
+/*-------------------------------------------------------------------*/
+/* WHO EXEC - sort and display user IDs from CP QUERY NAMES          */
+/* Arg 1: filter (optional) show only user IDs matching this string  */
+/* License: MIT - https://en.wikipedia.org/wiki/MIT_License          */
+/* Source: https://github.com/mike99mac/zvm-tools                    */
+/*-------------------------------------------------------------------*/
+parse upper arg filter
+if filter = "" | filter = "?" | filter = "-H" then do
+  say "Name:  WHO EXEC - sort output of QUERY NAMES"
+  say "Usage: WHO {FILTER}"
+  say "Where: FILTER is an optional search pattern"
+  exit 1
+end
+userIDs.0 = 0                        /* init stem variable */
+userNum = 1                          /* init counter */
+"PIPE CP QUERY NAMES | stem lines."  /* get Q NAMES output */
+if (rc <> 0) then do
+  say "ERROR: CP QUERY NAMES returned" rc
+  exit 1
+end
+do i = 1 To lines.0                 /* loop through all lines */
+  call processLine lines.i          /* process one line of output */
+end
+call sortOutput                     /* sort users */
+call printOutput                    /* show users */
+exit
+ 
+/* process one line of QUERY NAMES output */
+processLine: procedure expose userIDs. userNum
+  parse arg line                     /* get 4 triplets per line */
+  line = TRANSLATE(line, " ", ",")   /* remove commas */
+  userIDs.userNum = SUBWORD(line, 1, 3) /* first slot always there */
+  userNum = userNum + 1
+  nextUser = SUBWORD(line, 4, 3)
+  if LENGTH(nextUser) <> 0 then do   /* no more on this line */
+    userIDs.userNum = nextUser
+    userNum = userNum + 1
+  end
+  else return
+  nextUser = SUBWORD(line, 7, 3)
+  if LENGTH(nextUser) <> 0 then do
+    userIDs.userNum = nextUser
+    userNum = userNum + 1
+  end
+  else return
+  nextUser = SUBWORD(line, 10, 3)
+  if LENGTH(nextUser) <> 0 then do
+    userIDs.userNum = nextUser
+    userNum = userNum + 1
+  end
+  return
+ 
+sortOutput: /* sort userIDs stem variable alphabetically */
+  do i = 1 to userNum - 2               /* Bubble sort */
+    do j = 1 to userNum - 2 - i
+      k = j + 1
+      if userIDs.j > userIDs.k then do
+        temp = userIDs.j
+        userIDs.j = userIDs.k
+        userIDs.k = temp
+      end
+    end
+  end
+  return
+ 
+printOutput:
+  do i = 1 to userNum - 1
+    if LENGTH(filter) <> 0 then do
+      userID = WORD(userIDs.i, 1)    /* get user ID */
+      if POS(filter, userID) <> 0 then do /* matches filter */
+        say userIDs.i
+      end
+    end
+    else                             /* no filter applied */
+      say userIDs.i
+  end
+  return
+ 

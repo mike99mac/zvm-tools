@@ -1,0 +1,36 @@
+/*-------------------------------------------------------------------*/
+/* WC EXEC - print line, word and byte counts for each file          */
+/* Usage: WC fn ft fm                                                */
+/* License: MIT - https://en.wikipedia.org/wiki/MIT_License          */
+/* Source: https://github.com/mike99mac/zvm-tools                    */
+/*-------------------------------------------------------------------*/
+parse upper arg fn ft fm .
+if fn = "" | fn = "?" | fn = "-H" then do
+  say "Name : WC EXEC - print line, word and byte counts for each file"
+  say "Usage: wc fn [ft [fm]]"
+  exit 1
+end
+'PIPE COMMAND LISTFILE' fn ft fm '| stem files.'
+if files.0 = 0 then do
+  say 'No files found matching' fn ft fm
+  exit 3
+end
+totLines = 0
+totWords = 0
+totBytes = 0
+do i = 1 to files.0
+  lines = LINES(files.i)
+  words = 0
+  bytes = 0
+  do lines
+    aLine = LINEIN(files.i)
+    words = words + WORDS(aLine)
+    bytes = bytes + LENGTH(aLine)
+  end
+  totLines = totLines + lines
+  totWords = totWords + words
+  totBytes = totBytes + bytes
+  say FORMAT(lines, 8) FORMAT(words, 8) format(bytes, 9) files.i
+end
+say FORMAT(totLines, 8) FORMAT(totWords, 8) format(totBytes, 9) "total"
+ 
