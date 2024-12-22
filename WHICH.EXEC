@@ -280,7 +280,7 @@ if helpFlag = "yes" then                   /* convert to HELP cmd */
   if cmdType = "XEDIT" then
     say "HELP" expandedCmd
   else if scope = "CMD" then
-    say "HELP" expandedCmd
+    say expandedCmd
   else                                     /* prefix command type */
     say "HELP" cmdType||expandedCmd
 else if verbose = "yes" then               /* give more info */
