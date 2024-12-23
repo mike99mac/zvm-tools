@@ -5,7 +5,7 @@
 /* Source: https://github.com/mike99mac/zvm-tools                    */
 /*-------------------------------------------------------------------*/
 parse upper arg filter
-if filter = "" | filter = "?" | filter = "-H" then do
+if filter = "?" | filter = "-H" then do
   say "Name:  WHO EXEC - sort output of QUERY NAMES"
   say "Usage: WHO {FILTER}"
   say "Where: FILTER is an optional search pattern"
