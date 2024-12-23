@@ -7,20 +7,20 @@ Tools for z/VM - many inspired by useful Linux commands
     | CFM      EXEC    | Copy file with new file mode                    |
     | CFN      EXEC    | Copy file with new file name                    |
     | CFT      EXEC    | Copy file with new file type                    |
-    | COPYDISK EXEC    | Copy disk with FLASHCOPY if not DDR             |
+    | COPYDISK EXEC    | Copy disk with ``FLASHCOPY`` if not ``DDR``     |
     | CPFORMAT EXEC    | Format one or more DASD and label               |
     | DIFF     EXEC    | Compare files line by line                      |
     | GREP     EXEC    | Search for patterns in files                    |
-    | MAN      EXEC    | Give help on CMS/CP/XEDIT command               |
-    | QA       EXEC    | Run QUERY ACCESSED                              |
+    | MAN      EXEC    | Give help on CMS/CP/XEDIT commands              |
+    | QA       EXEC    | Run ``QUERY ACCESSED``                          |
     | RFN      EXEC    | Rename file changing only file name             |
     | RFT      EXEC    | Rename file changing only file type             |
     | RM       EXEC    | Remove files allowing wildcards                 |
     | SPC      EXEC    | Spool console to reader then restart            |
-    | SSICMD   EXEC    | Run commands on multiple SSI members            |
+    | SSICMD   EXEC    | Run CP commands on multiple SSI members         |
     | WC       EXEC    | Count lines, words and bytes in files           |
-    | WHICH    EXEC    | Find CMS/CP/XEDIT command                       |
-    | WHO      EXEC    | Show who is logged on                           |
+    | WHICH    EXEC    | Resolve CMS/CP/XEDIT commands                   |
+    | WHO      EXEC    | Show who is logged on and allow a pattern       |
     |                  |                                                 |
     | BF       XEDIT   | Move to the last page in XEDIT                  |
     | PROFFLST XEDIT   | Sets F10 to "Sort by Name" which is missing     |
@@ -75,6 +75,12 @@ Updates will be coming.
 ### GREP.EXEC
 The ``GREP EXEC`` searches for patterns in files.
 It hasn't been tested with SFSs.
+
+To search for strings with spaces, the pattern has to be escaped with triple double-quotes.  For example:
+
+```
+grep """parse upper arg""" * exec
+```
 
 Also, anyone know how to pass a string to REXX with spaces?  For example:
 ```

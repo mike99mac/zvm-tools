@@ -6,7 +6,7 @@
 /*-------------------------------------------------------------------*/
 Address COMMAND
 Parse Arg args                       /* get all arguments            */
-Parse Var args pattern args          /* pattern remains mixed case   */
+Parse Var args '"' pattern '"' args  
 Parse Upper var args fn ft fm .      /* fn, ft and fm are upper cased */
 If (pattern = '' | pattern = '?') Then Do
   If (pattern = '') Then Say 'Error: Missing pattern'
