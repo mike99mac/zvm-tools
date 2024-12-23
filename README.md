@@ -80,20 +80,14 @@ To search for strings with spaces, the pattern has to be escaped with triple dou
 
 ```
 grep """parse upper arg""" * exec
+...
 ```
-
-Also, anyone know how to pass a string to REXX with spaces?  For example:
-```
-grep "find three words" * exec           
-No files found matching THREE WORDS *  
-``` 
-The double quotes around the three words get *eaten*.
 
 ### MAN.EXEC
 The ``MAN EXEC`` calls help for the requested command.  For example, ``man q da`` takes you to the ``CP QUERY DASD`` help screen.
 
 ### QA.EXEC
-The ``QA EXEC`` simply calls ``QUERY ACCESSED`` in order to save keystrokes. 
+The ``QA EXEC`` simply calls ``QUERY ACCESSED`` to save keystrokes. 
 
 ### RFN.EXEC
 The ``RFN EXEC`` renames a file only changing the file name. 
@@ -131,7 +125,19 @@ Ready;
 ``` 
 
 ### WHO.EXEC
-The ``WHO EXEC`` 
+The ``WHO EXEC`` takes the output of ``QUERY NAMES``, sorts it and shows it one virtual machine per line.
+
+It also allows for a search pattern. For example: 
+
+```
+who SSL          
+SSLDCSSM - DSC   
+SSL00001 - DSC   
+SSL00002 - DSC   
+SSL00003 - DSC   
+SSL00004 - DSC   
+SSL00005 - DSC   
+```
 
 ## XEDIT Macros
 Following are descriptions of each XEDIT macro.
@@ -140,7 +146,9 @@ Following are descriptions of each XEDIT macro.
 The ``BF XEDIT`` macro takes you to the last screen of a file. 
 
 ### PROFFLST.XEDIT
-The ``XEDIT`` macro sets PF10 to *Sort by name* to the ``FILELIST`` command.
+Is it just me, or does the stock ``FILELIST`` command *not* have an option to sort by file name?
+
+The ``PROFFLST XEDIT`` macro sets PF10 to *Sort by name* to the ``FILELIST`` command.
 
 If that could be added to the z/VM system globally, this would not be needed. 
 
