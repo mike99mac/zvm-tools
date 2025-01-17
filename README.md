@@ -4,6 +4,8 @@ Tools for z/VM - many inspired by useful Linux commands
     +------------------+-------------------------------------------------+
     | File             | Description                                     |
     |------------------|-------------------------------------------------|
+    | CALCDASD EXEC    | Calculate total DASD space and types            |
+    | CALCOSA  EXEC    | Calculate free and used OSA and verify PCHIDs   |
     | CFM      EXEC    | Copy file with new file mode                    |
     | CFN      EXEC    | Copy file with new file name                    |
     | CFT      EXEC    | Copy file with new file type                    |
@@ -51,6 +53,30 @@ Number of 3390-As       (other sizes): 5
 Total CP-Owned cylinders: 40068 (31.72 GiB)          
 Total SYSTEM   cylinders: 1892676 (1498.22 GiB)      
 ```
+
+### CALCOSA.EXEC
+The ``CALCOSA EXEC`` merges free and used OSAs by ``rdev``, and verifies the CHPIDs and PCHIDs. 
+
+```
+calcosa                                              
+Rdev  UserID    Vdev  DevType  OSAtype  CHPID  PCHID   
+----  ------    ----  -------  -------  -----  -----   
+0340  DTCVSW1   0600  OSA      OSD      F0     NONE    
+0341  DTCVSW1   0601  OSA      OSD      F0     NONE    
+0342  DTCVSW1   0602  OSA      OSD      F0     NONE    
+1340  DTCVSW2   0600  OSA      OSD      F1     NONE    
+1341  DTCVSW2   0601  OSA      OSD      F1     NONE    
+1342  DTCVSW2   0602  OSA      OSD      F1     NONE    
+2340  FREE                              A0     NONE    
+2341  FREE                              A0     NONE    
+2342  FREE                              A0     NONE    
+                                                       
+Used OSAs:    6                                        
+Free OSAs:    3                                        
+           ----                                        
+    Total:    9                                        
+```
+
 ### CFM.EXEC
 The ``CFM EXEC`` copies a file just changing the file mode. 
 
