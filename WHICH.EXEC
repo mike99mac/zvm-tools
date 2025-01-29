@@ -6,7 +6,7 @@
  
 /* First define CMS/CP/Xedit Commands/Query/Set global variables     */
 /* CMS commands */
-CMScmds = "BORDER CMDCALL ESERV HB NOTE RT ",
+CMScmds = "ESERV HB NOTE RT ",
 ||"SYNMSGS CMSBATCH ESTATE Help NUCXDROP RTNDrop SYNonym ",
 ||"COMpare ESTATEW HELPCONV NUCXLOAD RTNLoad TAPE ",
 ||"CONWAIT ETRACE HI NUCXMAP RTNMap TAPEMAC ",
@@ -23,7 +23,7 @@ CMScmds = "BORDER CMDCALL ESERV HB NOTE RT ",
 ||"DELete FILEATTR LISTDS PSCreen VMFLKED ",
 ||"VSCREEN DEPRINT FIledef Listfile PSERV SETKEY VMFMAC ",
 ||"WINDOW DESBUF FILEList LISTIO PUnch SETPRT VMFPLC ",
-||"XEDIT DEVTYPE FILESTCK LKED Query SFSMSGS VMFPLCD ",
+||"Xedit DEVTYPE FILESTCK LKED Query SFSMSGS VMFPLCD ",
 ||"HELP DIRATtr FINDSTAK LOAD RDR SHRLDR VMFPLC2 ",
 ||"ACcess DIRID FINIS LOADLIB RDRList SO VMFTXT ",
 ||"ACCESSM0 DIRList FIXCENT LOADMod READcard SORT VMLINK ",
@@ -206,6 +206,7 @@ end
 if cmd == '' | cmd == "?" | cmd == "-H" then
   call help
  
+/* trace i */
 /* set flags to off then parse them, if any */
 debug = "no"
 helpFlag = "no"
@@ -310,21 +311,25 @@ inputLen = LENGTH(inputCmd)                /* length of input */
 tmpltLen = LENGTH(tmplt)                   /* length of next cmd/arg */
 do i = 1 to tmpltLen                       /* check each character */
   tmpltChar = SUBSTR(tmplt, i, 1)          /* next template char */
+  inputChar = SUBSTR(inputCmd, i, 1)       /* get same input char */
   if DATATYPE(tmpltChar, "U") then do      /* template char is upper */
     if i > inputLen then                   /* more chars required */
       return                               /* no match */
-    inputChar = SUBSTR(inputCmd, i, 1)     /* get same input char */
     if inputChar <> tmpltChar then         /* no match */
       return
   end
-  else                                     /* lower case not req'd */
-    leave                                  /* match */
+  else do                                  /* lower case not req'd */
+    UPPER tmpltChar                        /* fold tmpltChar to upper */
+    if i > inputLen | tmpltChar = inputChar then /* match */
+      leave
+    else                                   /* no match */
+      return
+  end
 end
  
 /* if we fall through there is a match */
 call debugMsg("checkArg(): MATCH!")
-tmpltUC = translate(tmplt)                 /* upper case command */
-fullCmd = tmpltUC
+fullCmd = translate(tmplt)                 /* upper case command */
 call debugMsg("cmdType:" cmdType "fullCmd:" fullCmd)
 call giveResult(cmdType scope fullCmd)     /* never returns */
 say "checkArg() INTERNAL ERROR: not supposed to get here!!!"
