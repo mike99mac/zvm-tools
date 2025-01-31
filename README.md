@@ -102,11 +102,10 @@ Updates will be coming.
 The ``GREP EXEC`` searches for patterns in files.
 It hasn't been tested with SFSs.
 
-To search for strings with spaces, the pattern has to be escaped with triple double-quotes.  For example:
+To search for strings with spaces, escape the pattern with single-quotes.  For example:
 
 ```
-grep """parse upper arg""" * exec
-...
+grep 'parse upper arg' * exec
 ```
 
 ### MAN.EXEC

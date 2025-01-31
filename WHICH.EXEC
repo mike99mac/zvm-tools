@@ -3,8 +3,6 @@
 /* License: MIT - https://en.wikipedia.org/wiki/MIT_License          */
 /* Source: https://github.com/mike99mac/zvm-tools                    */
 /*-------------------------------------------------------------------*/
- 
-/* First define CMS/CP/Xedit Commands/Query/Set global variables     */
 /* CMS commands */
 CMScmds = "ESERV HB NOTE RT ",
 ||"SYNMSGS CMSBATCH ESTATE Help NUCXDROP RTNDrop SYNonym ",
@@ -24,7 +22,7 @@ CMScmds = "ESERV HB NOTE RT ",
 ||"VSCREEN DEPRINT FIledef Listfile PSERV SETKEY VMFMAC ",
 ||"WINDOW DESBUF FILEList LISTIO PUnch SETPRT VMFPLC ",
 ||"Xedit DEVTYPE FILESTCK LKED Query SFSMSGS VMFPLCD ",
-||"HELP DIRATtr FINDSTAK LOAD RDR SHRLDR VMFPLC2 ",
+||"DIRATtr FINDSTAK LOAD RDR SHRLDR VMFPLC2 ",
 ||"ACcess DIRID FINIS LOADLIB RDRList SO VMFTXT ",
 ||"ACCESSM0 DIRList FIXCENT LOADMod READcard SORT VMLINK ",
 ||"ALIalist DISCARD FLIST MAClib RECEIVE SSERV VMSIZE ",
@@ -69,16 +67,26 @@ CPcmds = "ASSOCIAT SPXTAPE Close DETach INDicate REDEFine ",
 ||"CPSYNTAX DUMPLD2 IMAGELIB MIGR51D RETRIEVE SECTABLE DUMPVIEW ",
 ||"CCDUMP CVTOVRID DUMPLOAD INSTTAPE MONWRITE SALIPL SPORDER ",
 ||"CCLOAD DDR FORMSSI IOCP MONWSTOP SCSIDISC TRACERED ",
-||"CPEREPXA DIRECTXA GENIMAGE IOEXPLOR CONV ISLink DUMPLOAD "
+||"CPEREPXA DIRECTXA GENIMAGE IOEXPLOR CONV ISLink DUMPLOAD"
+ 
+/* TCP/IP commands */
+TCPIPcmds = "IPFORMAT LPRM REXEC TCPCOMP CMSRESOL LDAPADD LPRSET ",
+||"REXECD TCPLOAD CONVXLAT LDAPCHPW MOUNT RPCINFO TCPTXT DB2PWDEN ",
+||"LDAPCMPR MOUNTPW SMTP TELNET DIG LDAPDLET MPROUTE SMTPQUEU ",
+||"TFTP DS2LDIF LDAPEXOP NETSTAT SMTPRSCS TRACERTE FTP ",
+||"LDAPMDFY NFSPERM SNMPD UFTD FTPPERM LDAPMRDN NSLOOKUP SQESERV ",
+||"UMOUNT GSKKYMAN LDAPSRCH OBEYFILE SRVRFTP VMFC GSKTRACE ",
+||"LDAPSRV PING SSLADMIN VMFPAS HOMETEST LPQ PORTMAP SSLIDCSS ",
+||"VMNFS IFCONFIG LPR RESOLV SSLPOOL VMSSL"
  
 Xcmds = "CDelete CP Help Next REFRESH SOS ",
 ||"CFirst CReplace HEXType NFind RENum SPlit ",
-||"Change CURsor Input NFINDUp REPEat SPLTJOIN",
+||"Change CURsor Input NFINDUp REPEat SPLTJOIN ",
 ||"CInsert DELete Join Overlay Replace STAck ",
 ||"CLAst Down LEft PARSE RESet STATus ",
 ||"CLocate DUPlicat LOAD POWerinp RESTore SUPerset ",
 ||"CMS EMSG Locate PREServe RGTLEFT TOP ",
-||"Add CMSG EXPand LOWercas PURge RIght TRAnsfer",
+||"Add CMSG EXPand LOWercas PURge RIght TRAnsfer ",
 ||"ALL CMSXEDIT EXTract LPrefix PUT SAVE Type ",
 ||"ALter COMMAND FILE MACRO PUTD SCHANGE Up ",
 ||"BAckward COMPress Find MErge Query SET UPPercas ",
@@ -184,7 +192,7 @@ CPset = "CPUAFFini IO_OPT MEMAssist PFNNRETri SECUSER TIMEBomb ",
  
 /* XEDIT set commands */
 Xset = "CMDline FMode MASK PName SELect TABS ",
-||"COLOR FName MSGLine Point SERial TERMinal",
+||"COLOR FName MSGLine Point SERial TERMinal ",
 ||"COLPtr FType MSGMode PREfix SHADow TEXT ",
 ||"CTLchar FULLread NAMetype RANge SIDcode TOFEOF ",
 ||"ALT CURLine HEX NONDisp RECFm SPAN TRANSLat ",
@@ -205,15 +213,15 @@ if rest <> "" then do
 end
 if cmd == '' | cmd == "?" | cmd == "-H" then
   call help
- 
+upper flags                          /* flags to upper case */
 /* trace i */
-/* set flags to off then parse them, if any */
 debug = "no"
-helpFlag = "no"
 doTrace = "no"
+helpFlag = "no"
+numCmds = 0                          /* number of command found */
 verbose = "no"
 call parseFlags
-if doTrace = "yes" then                    /* turn trace on */
+if doTrace = "yes" then              /* turn trace on */
   trace i
 call debugMsg("debug:" debug)
 call debugMsg("helpFlag:" helpFlag)
@@ -223,16 +231,21 @@ call debugMsg("verbose:" verbose)
 /* handle QUERY and SET commands separately */
 select
   when LEFT(cmd, 1) = "Q" then
-    call queryCmd                          /* search QUERY cmds */
+    call queryCmd                    /* search QUERY cmds */
   when cmd = "SET" then
-    call setCmd                            /* search SET cmds */
+    call setCmd                      /* search SET cmds */
   otherwise
-    call otherCmds                         /* search all other cmds */
+    call otherCmds                   /* search all other cmds */
 end
- 
-/* if we fall through command was not found */
-call debugMsg("main(): fell through - command" cmd arg1 "not found")
-exit 1                                     /* WHICH EXEC */
+if verbose = "yes" then
+  if numCmds = 0 then do
+    say cmd arg1 "is not a command"
+    retVal = 1
+  end
+  else
+    say "found" numCmd "commands"
+    retVal = 0
+exit retVal                                /* WHICH EXEC */
  
 /*-------------------------------------------------------------------*/
 parseFlags: procedure expose flags debug helpFlag verbose doTrace
@@ -246,19 +259,19 @@ do i = 1 to numFlags
       debug = "yes"
     when nextFlag = "H" then
       helpFlag = "yes"
-    when nextFlag = "S" then               /* silent mode */
+    when nextFlag = "S" then         /* silent mode */
       verbose = "silent"
-    when nextFlag = "T" then               /* turn trace on */
+    when nextFlag = "T" then         /* turn trace on */
       doTrace = "yes"
     when nextFlag = "V" then
       verbose = "yes"
     otherwise do
       say "ERROR: unrecognized flag:" nextFlag
-      exit 8                               /* branch 2 halfwords */
+      exit 8                         /* branch 2 halfwords */
     end
   end
 end
-return                                     /* parseFlags() */
+return                               /* parseFlags() */
  
 /*-------------------------------------------------------------------*/
 debugMsg: procedure expose debug
@@ -268,36 +281,40 @@ if debug = "yes" then do
   parse arg msg
   say msg
 end
-return                                     /* debugMsg() */
+return                               /* debugMsg() */
  
 /*-------------------------------------------------------------------*/
-giveResult: procedure expose debug helpFlag verbose
+giveResult: procedure expose debug helpFlag verbose numCmds
 /* Give the answer either terse or verbose - then exit as we're done */
 /* Arg 1: Command type - CMS, CP or XEDIT                            */
 /* Arg 2: Scope - QUERY, SET or CMD                                  */
 /* Args 3-n: Fully qualified command - e.g. "q da" => QUERY DASD     */
 /*-------------------------------------------------------------------*/
-parse arg cmdType scope expandedCmd
+parse arg cmdType scope fullCmd
 call debugMsg("cmdType:" cmdType "scope:" scope,
-  "expandedCmd" expandedCmd "helpFlag:" helpFlag)
+  "fullCmd:" fullCmd "helpFlag:" helpFlag)
 if helpFlag = "yes" then                   /* convert to HELP cmd */
   if cmdType = "XEDIT" then
     if scope = "CMD" then
-      say "HELP" scope expandedCmd
+      say "HELP" scope fullCmd
     else                                   /* QUERY or SET */
-      say "HELP" cmdType||scope expandedCmd
-  else if scope = "CMD" then
-    say "HELP" cmdType expandedCmd
+      say "HELP" cmdType  scope fullCmd
+  else if (scope = "CMD") then
+    say "HELP" cmdType fullCmd
   else                                     /* prefix command type */
-    say "HELP" cmdType||expandedCmd
+    say "HELP" cmdType||scope fullCmd
 else if verbose = "silent" then            /* give less info */
   say cmdType
 else                                       /* normal verbosity */
-  say expandedCmd "is a" cmdType "command"
-exit                                       /* giveResult() */
+  if scope = "CMD" then
+    say fullCmd "is a" cmdType "command"
+  else
+    say scope fullCmd "is a" cmdType "command"
+numCmds = numCmds + 1
+return                                     /* giveResult() */
  
 /*-------------------------------------------------------------------*/
-checkArg: procedure expose debug helpFlag verbose
+checkArg: procedure expose debug helpFlag verbose numCmds
 /* Check if a supplied command/arg matches next one to check         */
 /* Arg 1: Command type "CP", "CMS", or "XEDIT"                       */
 /* Arg 2: Scope - "QUERY", "SET" or "CMD"                            */
@@ -320,8 +337,10 @@ do i = 1 to tmpltLen                       /* check each character */
   end
   else do                                  /* lower case not req'd */
     UPPER tmpltChar                        /* fold tmpltChar to upper */
-    if i > inputLen | tmpltChar = inputChar then /* match */
+    if i > inputLen | i > tmpltlen then    /* match */
       leave
+    if tmpltChar = inputChar then
+      iterate                              /* possible match */
     else                                   /* no match */
       return
   end
@@ -331,13 +350,12 @@ end
 call debugMsg("checkArg(): MATCH!")
 fullCmd = translate(tmplt)                 /* upper case command */
 call debugMsg("cmdType:" cmdType "fullCmd:" fullCmd)
-call giveResult(cmdType scope fullCmd)     /* never returns */
-say "checkArg() INTERNAL ERROR: not supposed to get here!!!"
-exit 13                                    /* bad luck */
+call giveResult(cmdType scope fullCmd)
+return
  
 /*-------------------------------------------------------------------*/
 queryCmd: procedure,
-  expose cmd arg1 CMSquery CPquery Xquery debug helpFlag verbose
+  expose cmd arg1 CMSquery CPquery Xquery debug helpFlag numCmds verbose
 /* Check if global "arg1" is a CP/CMS/XEDIT QUERY command argument   */
 /*-------------------------------------------------------------------*/
 if arg1 = "" then do                       /* no arg given */
@@ -365,8 +383,8 @@ end
 return                                     /* queryCmd() */
  
 /*-------------------------------------------------------------------*/
-setCmd: procedure,
- expose cmd arg1 CMSset CPset Xset debug helpFlag verbose
+setCmd: procedure  expose cmd arg1 CMSset CPset Xset debug helpFlag,
+  numCmds verbose
 /* Reply whether a SET command is CP/CMS/XEDIT                       */
 /*-------------------------------------------------------------------*/
 if arg1 = "" then do                       /* no arg given */
@@ -394,8 +412,8 @@ end
 return                                     /* setCmd() */
  
 /*-------------------------------------------------------------------*/
-otherCmds: procedure,
-  expose cmd arg1 CMScmds CPcmds Xcmds debug helpFlag verbose
+otherCmds: procedure expose cmd arg1 CMScmds CPcmds TCPIPcmds Xcmds,
+  debug helpFlag numCmds verbose
 /* Not QUERY nor SET command - check all other one word commands     */
 /*-------------------------------------------------------------------*/
 if arg1 <> "" then do                      /* only Q & SET add args */
@@ -407,31 +425,26 @@ end
 "pipe CMS LISTFILE" cmd " EXEC * | stem execs."
 if rc = 0 then do
   say execs.1                             /* 1st EXEC in search order */
-  exit
 end
  
 /* check if EXECLOADed */
-/* TO DO - how to test? */
 address command 'EXECSTAT' cmd 'EXEC'
 if rc < 8 then do
-  say "EXECLOAD"
-  exit
+  say cmd "is EXECLOADed"
 end
- 
-/* check if CMS command */
-do i = 1 to WORDS(CMScmds)
+do i = 1 to WORDS(CMScmds)                 /* check if CMS command */
   nextArg = WORD(CMScmds, i)
   call checkArg("CMS" "CMD" cmd nextArg)
 end
- 
-/* check if CP command */
-do i = 1 to WORDS(CPcmds)
+do i = 1 to WORDS(CPcmds)                  /* check if CP command */
   nextArg = WORD(CPcmds, i)
   call checkArg("CP" "CMD" cmd nextArg)
 end
- 
-/* check if XEDIT command */
-do i = 1 to WORDS(Xcmds)
+do i = 1 to WORDS(TCPIPcmds)               /* check if TCPIP command */
+  nextArg = WORD(TCPIPcmds, i)
+  call checkArg("TCPIP" "CMD" cmd nextArg)
+end
+do i = 1 to WORDS(Xcmds)                   /* check if XEDIT command */
   nextArg = WORD(Xcmds, i)
   call checkArg("XEDIT" "CMD" cmd nextArg)
 end

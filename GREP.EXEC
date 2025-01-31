@@ -1,27 +1,42 @@
 /*-------------------------------------------------------------------*/
-/* Name:  GREP EXEC - search files for text patterns                 */
-/* Usage: grep pattern FN [FT [FM]]                                  */
-/* License: MIT - https://en.wikipedia.org/wiki/MIT_License          */
+/* Name:  GREP EXEC - search files for text ptrns                    */
+/* Usage: grep ptrn FN [FT [FM]]                                     */
 /* Source: https://github.com/mike99mac/zvm-tools                    */
 /*-------------------------------------------------------------------*/
-Address COMMAND
-Parse Arg args                       /* get all arguments            */
-Parse Var args '"' pattern '"' args  
-Parse Upper var args fn ft fm .      /* fn, ft and fm are upper cased */
-If (pattern = '' | pattern = '?') Then Do
-  If (pattern = '') Then Say 'Error: Missing pattern'
-  Say 'Name:  grep - search files for text patterns'
-  Say 'Usage: grep pattern FN [FT [FM]]'
-  Exit 1
-End
+parse arg "'" ptrn "'" fn ft fm rest /* check for single quotes */
+if fn = "" then                      /* no single quotes */
+  parse arg ptrn fn ft fm rest
+if (ptrn = '' | ptrn = '?' | ptrn = "-h") then
+  call help
+if ft = "" then do
+  echo "ERROR: missing FT"
+  call help
+end
+if fm = "" then                      /* default file mode is A */
+  fm = "A"
+upper fn ft fm                       /* upper case file spec */
 'PIPE COMMAND LISTFILE' fn ft fm '| STEM files.'
-If (files.0 = 0) Then Do
-  Say 'No files found matching' fn ft fm
-  Exit 2
-End
-Do i = 1 to files.0
-  'PIPE |<' files.i '| locate /'||pattern||'/ | stem lines.'
-  Do j = 1 to lines.0
-    Say files.i||':' lines.j
-  End
-End
+if (files.0 = 0) then do
+  say "No files found matching" fn ft fm
+  exit 2
+end
+do i = 1 to files.0
+  'PIPE |<' files.i '| locate /'||ptrn||'/ | stem lines.'
+  parse var files.i nx_fn nx_ft nx_fm . /* remove spaces */
+  do j = 1 to lines.0
+    say nx_fn nx_ft nx_fm||':' lines.j
+  end
+end
+exit                                 /* GREP EXEC */
+ 
+/*-------------------------------------------------------------------*/
+help:
+/* Give help                                                         */
+/*-------------------------------------------------------------------*/
+say "Name:  GREP EXEC - search files for text patterns"
+say "Usage: GREP 'pattern' FN FT [FM]"
+say "WHERE: pattern is a single quote delimited search string"
+say "       FN FT is the file name and type to search"
+say "       FM is the file mode (default A)"
+exit 2
+ 

@@ -3,18 +3,37 @@
 /* Syntax: MAN <command>                                             */
 /*         MAN SET <subcommand>                                      */
 /*         MAN Query <subcommand>                                    */
-/* License: MIT - https://en.wikipedia.org/wiki/MIT_License          */
 /* Source: https://github.com/mike99mac/zvm-tools                    */
 /*-------------------------------------------------------------------*/
 'ESTATE WHICH EXEC *'
-if rc <> 0 then do
+if rc <> 0 then do                   /* co-req EXEC not found */
   say "ERROR: Co-requisite WHICH EXEC not found"
   say "See: https://github.com/mike99mac/zvm-tools"
   exit 1
 end
-parse arg inputArgs
-whichCmd = "which" inputArgs "(h)"         /* WHICH cmd w/Help flag */
-"pipe cms" whichCmd "| var helpCmd"        /* save the help command */
-say helpCmd                                /* list it */
-helpCmd                                    /* run it */
+parse upper arg arg1 arg2 rest
+if arg1 = "?" | arg1 = "-H" | arg1 = "" then
+  call help
+if rest <> "" then
+  say "WARNING: ignoring arg:" rest
+args = arg1
+if arg2 <> "" then
+  args = arg1 arg2
+'PIPE CMS WHICH' args '(H) | VAR helpCmd'
+if rc <> 0 then do
+  say "PIPE returned" rc
+  exit 2
+end
+address cms helpCmd
+exit                                 /* MAN EXEC */
+ 
+/*-------------------------------------------------------------------*/
+help:
+/* Give help                                                         */
+/*-------------------------------------------------------------------*/
+say "Name:  MAN EXEC - give help on command, details on QUERY and SET"
+say "Usage: MAN command"
+say "     | MAN Query subcommand"
+say "     | MAN SET   subcommand"
+exit 2
  
