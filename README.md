@@ -27,6 +27,8 @@ Tools for z/VM - many inspired by useful Linux commands
     | BF       XEDIT   | Move to the last page in XEDIT                  |
     | PROFFLST XEDIT   | Sets F10 to "Sort by Name" which is missing     |
     | PROFILE  XEDIT   | "This is the real thing" adapted from MAINT     |
+    |                  |                                                 |
+    | ZVMTOOLS VMARC   | Collection of all the above tools               |
     +------------------+-------------------------------------------------+
 
 ## REXX EXECs
@@ -179,4 +181,18 @@ If that could be added to the z/VM system globally, this would not be needed.
 
 ### PROFILE.XEDIT     
 The ``PROFILE XEDIT`` macro is a slightly modified copy of the one on the ``MAINT 191`` disk. 
+
+## VMARC file 
+There is a compressed file of all the EXECs and XEDIT macros in the file ``ZVMTOOLS.VMARC``.
+
+Unfortunately the ``VMARC`` tool to decompress it does not ship with z/VM. If you don't have already, it has to be installed:
+
+- Download the VMARC MODULE from: ``https://www.vm.ibm.com/download/vmarc.module``
+- Upload the file to CMS in BINARY (usually ``ftp``, then ``bin``, then ``put vmarc.module``)
+- Run it through this pipeline:
+
+```
+PIPE < VMARC MODULE A | deblock cms | > VMARC MODULE A
+```
+
 
