@@ -9,12 +9,12 @@ Tools for z/VM - many inspired by useful Linux commands
     | CFM      EXEC    | Copy file with new file mode                    |
     | CFN      EXEC    | Copy file with new file name                    |
     | CFT      EXEC    | Copy file with new file type                    |
-    | COPYDISK EXEC    | Copy disk with ``FLASHCOPY`` if not ``DDR``     |
+    | COPYDISK EXEC    | Copy disk with FLASHCOPY if not DDR             |
     | CPFORMAT EXEC    | Format one or more DASD and label               |
     | DIFF     EXEC    | Compare files line by line                      |
     | GREP     EXEC    | Search for patterns in files                    |
     | MAN      EXEC    | Give help on CMS/CP/XEDIT commands              |
-    | QA       EXEC    | Run ``QUERY ACCESSED``                          |
+    | QA       EXEC    | Run QUERY ACCESSED                              |
     | RFN      EXEC    | Rename file changing only file name             |
     | RFT      EXEC    | Rename file changing only file type             |
     | RM       EXEC    | Remove files allowing wildcards                 |
@@ -81,6 +81,7 @@ Free OSAs:    3
 
 ### CFM.EXEC
 The ``CFM EXEC`` copies a file just changing the file mode. 
+For example, if you want to copy the file ``COPYDISK EXEC A`` to your B disk, you can type ``CFM B COPYDISK EXEC A``, but if your in a ``FILELIST``, you can simply type ``CFM B`` next to it, as the ``FN FT FM`` will be automatically added to the end.
 
 ### CFN.EXEC
 The ``CFN EXEC`` copies a file just changing the file name.
@@ -102,13 +103,16 @@ Updates will be coming.
 
 ### GREP.EXEC
 The ``GREP EXEC`` searches for patterns in files.
-It hasn't been tested with SFSs.
 
 To search for strings with spaces, escape the pattern with single-quotes.  For example:
 
 ```
 grep 'parse upper arg' * exec
 ```
+Function to be added:
+- A "(I" flag to ignore case  
+- A "(V" flag to produce inverse results
+- SFS support
 
 ### MAN.EXEC
 The ``MAN EXEC`` calls help for the requested command.  For example, ``man q da`` takes you to the ``CP QUERY DASD`` help screen.
