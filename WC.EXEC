@@ -1,7 +1,6 @@
 /*-------------------------------------------------------------------*/
 /* WC EXEC - print line, word and byte counts for each file          */
 /* Usage: WC fn ft fm                                                */
-/* License: MIT - https://en.wikipedia.org/wiki/MIT_License          */
 /* Source: https://github.com/mike99mac/zvm-tools                    */
 /*-------------------------------------------------------------------*/
 parse upper arg fn ft fm .

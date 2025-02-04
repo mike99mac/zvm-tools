@@ -1,7 +1,6 @@
 /*-------------------------------------------------------------------*/
 /* RM EXEC - erase files while allowing wildcards                    */
 /* Arg 1: filter (optional) show only user IDs matching this string  */
-/* License: MIT - https://en.wikipedia.org/wiki/MIT_License          */
 /* Source: https://github.com/mike99mac/zvm-tools                    */
 /*-------------------------------------------------------------------*/
 address command
@@ -37,7 +36,7 @@ if answer = "Y" | answer = "YES" then
     if rc <> 0 then
       say "WARNING: ERASE" files.i "returned" rc
   end
-exit                                       /* RM EXEC */
+exit                                 /* RM EXEC */
  
 /*-------------------------------------------------------------------*/
 help:
@@ -45,5 +44,5 @@ help:
 /*-------------------------------------------------------------------*/
 say "Name: RM EXEC - erase one or more files"
 say "Usage: rm fn [ft [fm]]"
-exit
+exit                                 /* help() */
  

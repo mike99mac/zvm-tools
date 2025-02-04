@@ -1,6 +1,6 @@
 /*-------------------------------------------------------------------*/
-/* SPC EXEC - Close the console then start spooling it again         */
-/* License: MIT - https://en.wikipedia.org/wiki/MIT_License          */
+/* SPC EXEC - Close the console to a unique timestamp named file     */
+/* Then start spooling it again                                      */
 /* Source: https://github.com/mike99mac/zvm-tools                    */
 /*-------------------------------------------------------------------*/
 today = date("standard")                   /* yyyymmdd */

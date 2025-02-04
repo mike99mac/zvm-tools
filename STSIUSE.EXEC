@@ -1,0 +1,425 @@
+/*************************************************************
+ *                                                           *
+ *                  S T S I U S E    E X E C                 *
+ *                                                           *
+ *************************************************************
+ *                                                           *
+ * COPYRIGHT -                                               *
+ *     5741-A09 (C) COPYRIGHT IBM CORP. 2007, 2018           *
+ *     LICENSED MATERIALS - PROPERTY OF IBM                  *
+ *     ALL RIGHTS RESERVED.                                  *
+ *                                                           *
+ *                                                           *
+ * STATUS - z/VM   Version 7, Release 1.0                    *
+ *                                                           *
+ *   This programming example is to be used as a sample      *
+ *   program only.  Although this program may have been      *
+ *   reviewed by IBM for accuracy in a specific              *
+ *   environment, there is no guarantee that the same or     *
+ *   similar results will be obtained elsewhere.  The code   *
+ *   is being provided on an 'as is' basis without any       *
+ *   warranty expressed or implied.                          *
+ *                                                           *
+ *************************************************************
+ *                                                           *
+ * Purpose: This exec demonstrates various STSI() REXX       *
+ *          function calls which issue the z/Architecture    *
+ *          STSI assembler instruction and return a          *
+ *          4K buffer with information on the machine        *
+ *          or partition.                                    *
+ *                                                           *
+ *          The STSI instruction's name is                   *
+ *          "Store System Information"                       *
+ *                                                           *
+ *          The STSI instruction uses three inputs:          *
+ *            Function Code - selects the machine/partition  *
+ *            Selector 1    - Configuration or CPUs?         *
+ *            Selector 2    - one or more CPUs?              *
+ *                                                           *
+ *************************************************************/
+ 
+/*************************************************************
+ * Change activity:                                          *
+ *07 Nov 2005  +++ Exec written                              *
+ *06 Nov 2009  +++ additional fields added to examples for   *
+ *                 STSI 1.1.1 and STSI 1.2.2, Changes are    *
+ *                 identified in comments containing 110609. *
+ *08 Aug 2013  +++ Conversion to binary floating point added *
+ *                 for Capability fields.                    *
+ *05 Jun 2014  +++ Added support for multi-threading related *
+ *                 information.                              *
+ *04 Aug 2016  +++ Firmware Identifier added to STSI 1.1.1.  *
+ *15 Mar 2018  +++ Max PU Count added to STSI 1.1.1.         *
+ *************************************************************/
+ 
+/*************************************************************
+ * General Considerations:                                   *
+ *  - In the Principles of Operation the control blocks      *
+ *    start numbering bytes at 0 and Pipelines starts        *
+ *    at 1.                                                  *
+ *  - No conversion is done on text fields                   *
+ *  - Decimal fields were converted with c2d                 *
+ *  - All other fields were converted to hex using c2x       *
+ *  - Reserved fields are not displayed                      *
+ *************************************************************/
+ 
+ 
+ 
+/*************************************************************
+ * Current-configuration-level number                        *
+ *************************************************************/
+ 
+say
+say 'STSI(0,0,0)........................................0.0.0.'
+result = stsi(0,0,0)
+address command 'PIPE',
+   '|  var result',
+   '|  specs',
+       '/Current-config-level number:/ 1   1.4  c2x nw',
+   '|  cons'
+ 
+ 
+/*************************************************************
+ * Basic-machine configuration                               *
+ *************************************************************/
+ 
+say
+say 'STSI(1,1,1)........................................1.1.1.'
+result = stsi(1,1,1)
+address command 'PIPE',
+   '|  var result',
+   '|  specs',
+       '/P (flag bit 0):             / 1   1.1  c2x nw write',
+       '/M (flag bit 6):             / 1   1.1  c2x nw write',
+       '/T (flag bit 7):             / 1   1.1  c2x nw write',
+       '/CCR:                        / 1   3.1  c2d nw left write',
+       '/CAI:                        / 1   4.1  c2d nw left write',
+       '/Firmware Identifier:        / 1  25.8  c2x nw write',
+       '/Manufacturer:               / 1  33.16     nw write',
+       '/Type:                       / 1  49.4      nw write',
+       '/Max PU Count:               / 1  53.2  c2d nw left write',
+       '/Model-Capacity Identifier:  / 1  65.16     nw write',
+       '/Sequence Code:              / 1  81.16     nw write',
+       '/Plant of Manufacture:       / 1  97.4      nw write',
+       '/Model:                      / 1 101.16     nw write',
+       '/Model Perm-Capacity Ident   / 1 117.16     nw write',
+       '/Model Temp-Capacity Ident   / 1 133.16     nw write',
+       '/Model-Capacity Rating       / 1 149.4  c2d nw left write',
+       '/Model-Perm-Capacity Rating  / 1 153.4  c2d nw left write',
+       '/Model-Temp-Capacity Rating  / 1 157.4  c2d nw left write',
+       '/Type 1 Percentage           / 1 161.1  c2d nw left write',
+       '/Type 2 Percentage           / 1 162.1  c2d nw left write',
+       '/Type 3 Percentage           / 1 163.1  c2d nw left write',
+       '/Type 4 Percentage           / 1 164.1  c2d nw left write',
+       '/Type 5 Percentage           / 1 165.1  c2d nw left write',
+       '/Nominal Model-Capacity      / 1 169.4  c2d nw left write',
+       '/Nominal Model-Perm-Capacity / 1 173.4  c2d nw left write',
+       '/Nominal Model-Temp-Capacity / 1 177.4  c2d nw left',
+   '|  stem out111.'
+ 
+out111.1 =left(out111.1,29)||c2x(bitand(x2c(substr(out111.1,30,2)),'80'x))
+out111.2 =left(out111.2,29)||c2x(bitand(x2c(substr(out111.2,30,2)),'02'x))
+out111.3 =left(out111.3,29)||c2x(bitand(x2c(substr(out111.3,30,2)),'01'x))
+ 
+'pipe stem out111. | cons'
+ 
+/*************************************************************
+ * Basic-machine CPU                                         *
+ *************************************************************/
+ 
+say
+say 'STSI(1,2,1)........................................1.2.1.'
+result = stsi(1,2,1)
+address command 'PIPE',
+   '|  var result',
+   '|  specs',
+       '/Sequence Code:              / 1  81.16     nw write',
+       '/Plant of Manufacture:       / 1  97.4      nw write',
+       '/CPU Address or core ID:     / 1 103.2  c2x nw write',
+   '|  cons'
+ 
+ 
+/*************************************************************
+ * Basic-machine CPUs                                        *
+ *************************************************************/
+ 
+say
+say 'STSI(1,2,2)........................................1.2.2.'
+result = stsi(1,2,2)
+address command 'PIPE (ENDCHAR ?)',/*obtain the format and offset*/
+   '|  var result',
+   '|f:fanout',
+   '|  specs 1.1 c2d 1',         /* first byte is the rcd format */
+   '|  var format',
+   '?f:',
+   '|  specs 3.2 c2d 1',         /* bytes 3.2 contain the offset */
+   '|  var offset'
+ 
+if (strip(format) == 0) then do      /* Format 0                 */
+  address command 'PIPE (ENDCHAR ?)',
+     '|  var result',
+     '|  specs',
+       '/Format:                     / 1   1.1  c2x nw write',
+       '/MT Installed (bit 0):       / 1   5.1  c2x nw left write',
+       '/MT max TID spec (bits 3-7): / 1   5.1  c2x nw left write',
+       '/MT max TID prim (bits 3-7): / 1   6.1  c2x nw left write',
+       '$Primary CPU/core Speed:     $ 1  17.4  c2d nw left write',
+       '$Secondary CPU/core Speed:   $ 1  21.4  c2d nw left write',
+       '/Nominal CPU Cap.:           / 1  25.4  c2x nw left write',
+       '/Secondary CPU Cap.:         / 1  29.4  c2x nw left write',
+       '/CPU Capability:             / 1  33.4  c2x nw left write',
+       '$Total CPU/core Count:       $ 1  37.2  c2d nw left write',
+       '$Conf. CPU/core Count:       $ 1  39.2  c2d nw left write',
+       '$SB    CPU/core Count:       $ 1  41.2  c2d nw left write',
+       '$Resv. CPU/core Count:       $ 1  43.2  c2d nw left write',
+       '/Adjustment Factors:         / 1  45-*  c2x nw write',
+      '|l:locate 61',            /* keep long lines              */
+      '|c:chop 29',              /* send off storage content     */
+      '|f:faninany',
+      '|  stem output.',
+      '?l:|f:',                  /* bypass for short lines       */
+      '?c:',                     /* format storage content       */
+      '|  deblock 64',           /* 8 wds per line               */
+      '|  not verify /0/',       /* get rid of lines with all 0's*/
+      '|  specs 1.8 5   9.8 nw 17.8 nw 25.8 nw ', /* add blanks  */
+      '        33.8 nw 41.8 nw 49.8 nw 57-* nw',
+      '|f:'
+end
+else do                          /* Format 1                     */
+  n = trunc(offset/4)            /* offset is in bytes, n in wds */
+  nm1 = (4*n)                    /* N minus one byte -len(MP CPU)*/
+  np1 = (n+1)*4+1                /* N plus one word -@ alt MP CPU*/
+  address command 'PIPE (ENDCHAR ?)',
+     '|  var result',
+     '|  specs',
+       '/Format:                     / 1   1.1  c2x nw write',
+       '/ACC Offset:                 / 1   3.2  c2x nw write',
+       '/MT Installed (bit 0):       / 1   5.1  c2x nw left write',
+       '/MT max TID spec (bits 3-7): / 1   5.1  c2x nw left write',
+       '/MT max TID prim (bits 3-7): / 1   6.1  c2x nw left write',
+       '$Primary CPU/core Speed:     $ 1  17.4  c2d nw left write',
+       '$Secondary CPU/core Speed:   $ 1  21.4  c2d nw left write',
+       '/Nominal CPU Cap.:           / 1  25.4  c2x nw left write',
+       '/Secondary CPU Cap.:         / 1  29.4  c2x nw left write',
+       '/CPU Capability:             / 1  33.4  c2x nw left write',
+       '$Total CPU/core Count:       $ 1  37.2  c2d nw left write',
+       '$Conf. CPU/core Count:       $ 1  39.2  c2d nw left write',
+       '$SB    CPU/core Count:       $ 1  41.2  c2d nw left write',
+       '$Resv. CPU/core Count:       $ 1  43.2  c2d nw left write',
+       '/MP Adjustment Factors:      / 1  45-'nm1' c2x nw write',
+       '/Alt CPU Capability:         / 1 '1+4*n'.4  c2x nw write',
+       '/Alt MP Adj. Factors:        / 1 'np1'-* c2x nw write',
+      '|l:locate 61',            /* keep long lines              */
+      '|c:chop 29',              /* send off storage content     */
+      '|f:faninany',
+      '|  stem output.',
+      '?l:|f:',                  /* bypass for short lines       */
+      '?c:',                     /* format storage content       */
+      '|  deblock 64',           /* 8 words per line             */
+      '|  not verify /0/',       /* get rid of lines with all 0's*/
+      '|  specs 1.8 5   9.8 nw 17.8 nw 25.8 nw ', /* add blanks  */
+      '        33.8 nw 41.8 nw 49.8 nw 57-* nw',
+      '|f:'
+end
+if left(output.2,3)='ACC' then o = 3; else o = 2
+output.o =left(output.o,29)||c2x(bitand(x2c(substr(output.o,30,2)),'80'x))
+o = o+1
+output.o =left(output.o,29)||c2x(bitand(x2c(substr(output.o,30,2)),'1F'x))
+o = o+1
+output.o =left(output.o,29)||c2x(bitand(x2c(substr(output.o,30,2)),'1F'x))
+ 
+Call Convert_Capability
+ 
+/*************************************************************
+ * Logical-partition CPU                                     *
+ *************************************************************/
+ 
+say
+say 'STSI(2,2,1)........................................2.2.1.'
+result = stsi(2,2,1)
+address command 'PIPE',
+   '|  var result',
+   '|  specs',
+       '/Sequence Code:              / 1  81.16     nw write',
+       '/Plant of Manufacture:       / 1  97.4      nw write',
+       '/LCPU ID:                    / 1 101.2  c2x nw write',
+       '/LCPU Address or core ID:    / 1 103.2  c2x nw',
+   '|  cons'
+ 
+say
+say 'STSI(2,2,1).................REXX solution..........2.2.1.'
+Parse Value STSI(2,2,1) with . 81 seqcode 97 plant 101 id 103 addr 105 .
+Say 'Sequence code:' seqcode
+Say 'Plant of Manufacture:' plant
+Say 'LCPU ID:' C2X(id)
+Say 'LCPU Address or core ID:' C2X(addr)
+ 
+ 
+/*************************************************************
+ * Logical-partition CPUs                                    *
+ *************************************************************/
+ 
+say
+say 'STSI(2,2,2)........................................2.2.2.'
+result = stsi(2,2,2)
+address command 'PIPE',
+   '|  var result',
+   '|  specs',
+       '/LPAR Number:                / 1  33.2  c2x nw write',
+       '/LCPUC:                      / 1  36.1  c2x nw write',
+       '$Total LCPU/core Count:      $ 1  37.2  c2d nw left write',
+       '$Conf. LCPU/core Count:      $ 1  39.2  c2d nw left write',
+       '$SB LCPU/core Count:         $ 1  41.2  c2d nw left write',
+       '$Resv. LCPU/core Count:      $ 1  43.2  c2d nw left write',
+       '/Logical-Partition Name:     / 1  45.8      nw write',
+       '/Logical-Partition CAF:      / 1  53.4  c2d nw left write',
+       '/MT Installed (bit 0):       / 1  65.1  c2x nw left write',
+       '/MT max TID spec (bits 3-7): / 1  65.1  c2x nw left write',
+       '/MT max TID prim (bits 3-7): / 1  66.1  c2x nw left write',
+       '/PSMTID active (bits 3-7):   / 1  67.1  c2x nw left write',
+       '$Ded. LCPU/core Count:       $ 1  73.2  c2d nw left write',
+       '$Shr. LCPU/core Count:       $ 1  75.2  c2d nw left write',
+   '|  stem out222.'
+ 
+out222.9 =left(out222.9,29)||c2x(bitand(x2c(substr(out222.9,30,2)),'80'x))
+out222.10 =left(out222.10,29)||c2x(bitand(x2c(substr(out222.10,30,2)),'1F'x))
+out222.11 =left(out222.11,29)||c2x(bitand(x2c(substr(out222.11,30,2)),'1F'x))
+out222.12 =left(out222.12,29)||c2x(bitand(x2c(substr(out222.12,30,2)),'1F'x))
+ 
+'pipe stem out222. | cons'
+ 
+/*************************************************************
+ * Virtual-machine CPUs                                      *
+ *   Notes:                                                  *
+ *       - The Virtual-Machine Description Block content     *
+ *         is also displayed.                                *
+ *       - Two spec stages were used to display only         *
+ *         the last four bits.                               *
+ *       - DBCT is bits 28-31 of word 7                      *
+ *************************************************************/
+ 
+say
+say 'STSI(3,2,2)........................................3.2.2.'
+result = stsi(3,2,2)
+ 
+address command 'PIPE (ENDCHAR ?)',
+   '|  var result',
+   '|  take 1',               /* obtain DBCT                    */
+   '|  specs 32.1  c2x 1',    /* convert byte into 2 hex digits */
+   '|  var dbct',
+   '|  specs',                /* select the second hex digit    */
+       '/DBCT:                       / 1   2.1      nw ',
+   '|  cons'
+ 
+dbct = x2d(dbct)
+ 
+address command 'PIPE (ENDCHAR ?)',
+   '|  var result',
+   '|  not chop 28',
+   '|  fblock 64',
+   '|  take' dbct,
+   '|  specs 1-* 29',
+   '|  specs',
+       '/Total LCPU Count:           / 1  37.2  c2d nw left write',
+       '/Conf. LCPU Count:           / 1  39.2  c2d nw left write',
+       '/SB LCPU Count:              / 1  41.2  c2d nw left write',
+       '/Resv. LCPU Count:           / 1  43.2  c2d nw left write',
+       '/Virtual-Machine Name:       / 1  45.8      nw write',
+       '/Virtual-Machine CAF:        / 1  53.4  c2d nw left write',
+       '/Control-Program Identifier: / 1  57.16     nw write',
+'|  cons'
+ 
+Exit 0
+ 
+/*************************************************************
+ * Extract the capability numbers from the STSI 1.2.2        *
+ *   output and convert the values from binary integers or   *
+ *   binary floating points to decimal.                      *
+ *   Reinsert the new numbers back into the output and       *
+ *   display it.                                             *
+ *************************************************************/
+Convert_Capability: procedure expose output.
+ 
+  address command 'PIPE (ENDCHAR ?)',
+     '|  stem output.',
+     '|  locate /Cap/',
+  '|  stem capability.'
+ 
+  do i=1 to capability.0
+ 
+   Parse Var capability.i fieldname ':' value
+ 
+   address command 'PIPE (ENDCHAR ?)',
+      '|  var value',
+      '|  strip both',
+   '|  var value'
+ 
+   value = BFP2D(value)
+   value = format(value,,8)
+   pad=right(' ',27-length(fieldname))
+   newcap = fieldname||':'pad value
+ 
+   address command 'PIPE (ENDCHAR ?)',
+      '|  stem output.',
+      '|  change /'capability.i'/'newcap'/',
+   '|  stem output.'
+  end
+ 
+  address command 'PIPE (ENDCHAR ?)',
+     '|  stem output.',
+  '|  cons'
+ 
+Return
+ 
+/*************************************************************
+ * Take a number, check to see if it is binary floating      *
+ *   point.  If it is BFP, convert to a decimal format.      *
+ *   Otherwise just convert the integer to decimal and       *
+ *   return.                                                 *
+ *************************************************************/
+BFP2D: procedure
+ parse arg num
+ numeric digits 50
+ 
+ num = x2b(num)
+ 
+ if substr(num,1,9) = 0 then Return x2d(b2x(num))
+ 
+ sign = substr(num,1,1)
+ outsign = ''
+ if sign = 1 then outsign = '-'
+ 
+ char = substr(num,2,8)
+ hexchar = B2X(char)
+ decchar = x2d(hexchar)
+ decchar = decchar - 127
+ decchar = decchar+1
+ 
+ actualnum = substr(num,10)
+ actualnum = '1' || actualnum
+ 
+ if decchar<=0 then do
+   integer=0
+   decchar=substr(decchar,2)
+   if decchar='' then decchar=0
+   fraction=right(actualnum,decchar+length(actualnum),0)
+ end
+ else do
+   integer = substr(actualnum,1,decchar,'0')
+   integer = x2d(b2x(integer))
+   fraction=substr(actualnum,decchar+1)
+ end
+ 
+ base = .5
+ fracsum = 0
+ do i=1 to length(fraction)
+   bit = substr(fraction,1,1)
+   fraction = substr(fraction,2)
+   if bit=1 then fracsum=fracsum+base
+   base = base/2
+ end
+ 
+ fracsum = substr(fracsum,2)
+ num=integer||fracsum
+ 
+Return num

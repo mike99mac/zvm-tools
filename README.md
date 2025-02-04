@@ -110,8 +110,8 @@ To search for strings with spaces, escape the pattern with single-quotes.  For e
 grep 'parse upper arg' * exec
 ```
 Function to be added:
-- A "(I" flag to ignore case  
-- A "(V" flag to produce inverse results
+- A ``(I`` flag to ignore case  
+- A ``(V`` flag to produce inverse results
 - SFS support
 
 ### MAN.EXEC

@@ -1,10 +1,9 @@
 /*-------------------------------------------------------------------*/
 /* SSICMD EXEC - Issue a CP command on all members of an SSI cluster */
 /* Syntax: SSICMD <command>                                          */
-/* License: MIT - https://en.wikipedia.org/wiki/MIT_License          */
 /* Reference: https://github.com/mike99mac/zvm-tools                 */
 /*-------------------------------------------------------------------*/
-parse upper args cmd
+parse upper arg cmd
 if cmd = "" | cmd = "?" | cmd = "-H" then do
   say "Name: SSICMD EXEC - Issue a CP command on all SSI members"
   say "Usage: SSICMD <CPcmd>"

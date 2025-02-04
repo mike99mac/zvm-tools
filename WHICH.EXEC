@@ -1,6 +1,6 @@
 /*-------------------------------------------------------------------*/
-/* WHICH EXEC - Determine if a command is CP, CMS, or REXX EXEC      */
-/* License: MIT - https://en.wikipedia.org/wiki/MIT_License          */
+/* WHICH EXEC - Determine if a command is:                           */
+/*   - CP, CMS, XEDIT, TCP/IP, a REXX EXEC or a loaded EXEC          */
 /* Source: https://github.com/mike99mac/zvm-tools                    */
 /*-------------------------------------------------------------------*/
 /* CMS commands */

@@ -1,13 +1,13 @@
 /*-------------------------------------------------------------------*/
 /* CPFORMAT EXEC - CP format one, or a range of DASD and label them  */
 /* Syntax: CFN fn1 ft1 fm1 fn2                                       */
-/* License: MIT - https://en.wikipedia.org/wiki/MIT_License          */
 /* Source: https://github.com/mike99mac/zvm-tools                    */
 /*-------------------------------------------------------------------*/
 address COMMAND
-firstchar = "J"
+firstchar = "J"                      /* first character of label */
 arg dasds "AS " type .
-if dasds = "" | dasds = "?" then call help
+if dasds = "" | dasds = "?" then
+  call help
 labelPrefix = firstchar || getLabelPrefix(type)
 numDasd = parseDasd(dasds)
 answer = areYouSure(type)

@@ -4,7 +4,6 @@
 /* RC   : 0 - files are identical                                    */
 /*      : 1 - files are different                                    */
 /*      : 2+- comparison did not complete                            */
-/* License: MIT - https://en.wikipedia.org/wiki/MIT_License          */
 /* Source: https://github.com/mike99mac/zvm-tools                    */
 /*-------------------------------------------------------------------*/
 diffs = 0
@@ -83,7 +82,7 @@ setColor:
   if verbose = 0 then
     return
   parse arg color
-  'conwait'                                /* flush output stack */
+  /* 'conwait'                                flush output stack */
   'pipe cp screen outarea' color '| hole' /* no COMMAND COMPLETE */
   return
  
@@ -137,112 +136,78 @@ return
 compareFiles:
 /* Do the work                                                       */
 /*-------------------------------------------------------------------*/
-/*trace i */
-  execio '*' diskr fn1 ft1 fm1 '(stem' f1text. ')'
-  execio '*' diskr fn2 ft2 fm2 '(stem' f2text. ')'
-  f1len = f1text.0
-  f2len = f2text.0
-  numChars = LENGTH(MAX(f1len, f2len))    /* number of chars in tests */
+/*trace i*/
+execio '*' diskr fn1 ft1 fm1 '(stem' f1text. ')'
+execio '*' diskr fn2 ft2 fm2 '(stem' f2text. ')'
+f1len = f1text.0
+f2len = f2text.0
+numChars = LENGTH(MAX(f1len, f2len))    /* number of chars in tests */
  
-  /* show file names and line count in color */
-  spaces = COPIES(" ", numChars)
-  call regMsg (spaces "<" fn1 ft1 fm1 "has" f1len "lines")
-  call setColor("red")
-  call regMsg (spaces ">" fn2 ft2 fm2 "has" f2len "lines")
-  call setColor("green")
-  call regMsg(" ")
+/* show file names and line count in color */
+spaces = COPIES(" ", numChars)
+call regMsg (spaces "<" fn1 ft1 fm1 "has" f1len "lines")
+call setColor("red")
+call regMsg (spaces ">" fn2 ft2 fm2 "has" f2len "lines")
+call setColor("green")
+call regMsg(" ")
  
-  sameLines = 0
-  mismatched = "no"
-  i = 1                                    /* file 1 counter */
-  j = 1                                    /* file 2 counter */
-  do while i <= f1len | j <= f2len
-    if i > f1len then do                   /* file 1 is finished */
-      call VrbosMsg("file 1 is finished")
-      call checkSameLines
-      msg = FORMAT(j, numChars) ">" STRIP(f2text.j)
-      setColor("red")
-      call regMsg(msg)
-      setColor("green")
+sameLines = 0
+mismatched = "no"
+i = 1                                /* file 1 counter */
+j = 1                                /* file 2 counter */
+do while i <= f1len & j <= f2len
+  if f1text.i <> f2text.j then do    /* Lines are different */
+    diffs = diffs + 1
+    call regMsg(FORMAT(i, numChars) "<" STRIP(f1text.i))
+    call setColor("red")
+    call regMsg(FORMAT(j, numChars) ">" STRIP(f2text.j))
+    call setColor("green")
+    k = j + 1
+    if f1text.i == f2text.k then do  /* New line in second file */
+      call setColor("red")
+      call regMsg(FORMAT(j, numChars) ">" STRIP(f2text.j))
+      call setColor("green")
       j = j + 1
-      iterate
     end
-    if j > f2len then do                   /* file 2 is finished */
-      call VrbosMsg("file 2 is finished")
-      call checkSameLines
-      msg = FORMAT(i, numChars) ">" STRIP(f1text.i)
-      call regMsg(msg)
-      i = i + 1
-      iterate
-    end
-    if f1text.i <> f2text.j then do  /* lines are different */
-      call VVrbosMsg("File 1 line" i "and file 2 line" j "differ")
-      diffs = diffs + 1
-      call checkSameLines
-      mismatched = "yes"
-      found = "no"
-      do ii = 1 to f1len                    /* try to resynchronize */
-        do jj = j + 1 to f2len              /* start next line of f2 */
-          call VVrbosMsg("ii:" ii "f1text.ii:" STRIP(f1text.ii))
-          call VVrbosMsg("jj:" jj "f1text.jj:" STRIP(f1text.jj))
-          if f1text.ii == f2text.jj then do /* synced back up */
-            call VVrbosMsg("synced back up - ii:" ii "jj:" jj)
-            if ii > jj then do              /* new lines in file 1 */
-              newLines = ii - jj
-              call VVrbosMsg("file 1 new lines:" newLines)
-              do k = 0 to newLines - 1
-                call regMsg(FORMAT(i, numChars) "<" STRIP(f1text.i))
-                i = i + 1
-              end
-            end
-            else if jj > ii then do       /* new lines in file 2 */
-              newLines = jj - ii
-              call VVrbosMsg("file 2 new lines:" newLines)
-              do k = 0 to newLines - 1
-                call setColor("red")
-                call regMsg(FORMAT(i, numChars) ">" STRIP(f2text.j))
-                call setColor("green")
-                i = i + 1
-              end
-            end
-            else do                        /* only one line differs */
-              call VVrbosMsg("only one line differs i =" i "j =" j)
-              call regMsg(FORMAT(i, numChars) "<" STRIP(f1text.i))
-              call setColor("red")
-              call regMsg(FORMAT(j, numChars) ">" STRIP(f2text.j))
-              call setColor("green")
-            end
-            i = ii
-            j = jj
-            found = "yes"
-            leave
-          end                              /* if synced */
-        end                                /* do jj */
-        if found == "yes" then leave
-      end                                  /* do ii */
-      if found == "no" then do
+    else
+      k = i + 1
+      if f2text.j == f1text.k then do /* New line in first file */
+        call regMsg(FORMAT(i, numChars) "<" STRIP(f1text.i))
+        i = i + 1
+      end
+      else do                              /* Cannot easily reconcile */
         i = i + 1
         j = j + 1
       end
     end
-    else do                              /* lines are the same */
-      call VVrbosMsg("File 1 line" i "and file 2 lin:"j "are the same")
-      if mismatched == "yes" then do
-        mismatched = "no"
-        if verbose > 1 then do
-          if i == j then
-            say "    --- resynchronized at line" i " ---"
-          else
-            say "    --- resynchronized at line" i "and line" j "  ---"
-        end
-      end
-      sameLines = sameLines + 1
-      call VVrbosMsg("incremented sameLines to" sameLines)
-      i = i + 1
-      j = j + 1
-    end
+  else do                                /* Lines are the same */
+    i = i + 1
+    j = j + 1
   end
-  return                             /* compareFiles() */
+end
+do while i <= f1len                      /* Handle remaining lines */
+  call regMsg(FORMAT(i, numChars) "<" STRIP(f1text.i))
+  i = i + 1
+end
+do while j <= f2len
+  call setColor("red")
+  call regMsg(FORMAT(j, numChars) ">" STRIP(f2text.j))
+  call setColor("green")
+  j = j + 1
+end
+return
+ 
+/*-------------------------------------------------------------------*/
+usage:                               /* give help                    */
+/*-------------------------------------------------------------------*/
+  say "Name : DIFF EXEC - compare two files"
+  say "Usage: diff fn1 ft1 fm1 fn2 ft2 fm2 ( flags"
+  say "Where: 'fn1 ft1 fm1' is the first file to compare"
+  say "       'fn2 ft2 fm2' is the second file to compare"
+  say "       '(flags'      havent been decided yet"
+  return                             /* usage() */
+ 
+return                             /* compareFiles() */
  
 /*-------------------------------------------------------------------*/
 usage:                               /* give help                    */
