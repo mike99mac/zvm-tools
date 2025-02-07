@@ -31,7 +31,7 @@ Tools for z/VM - many inspired by useful Linux commands
     | ZVMTOOLS VMARC   | Collection of all the above tools               |
     +------------------+-------------------------------------------------+
 ### TO DO
-These would be nice to have:
+#### Possible new EXECs:
 
     +------------------+-------------------------------------------------+
     | File             | Description                                     |
@@ -40,6 +40,13 @@ These would be nice to have:
     | LOCATE   EXEC    | search for files on all CMS disks and SFS's     |
     |          EXEC    |                                                 |
     +------------------+-------------------------------------------------+
+
+#### Updates to existing EXECs
+
+- Get regular expressions working in GREP EXEC
+- Add REXX to WHICH EXEC
+
+
 
 
 ## REXX EXECs

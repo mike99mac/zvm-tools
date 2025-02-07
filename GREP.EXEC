@@ -1,42 +1,231 @@
-/*-------------------------------------------------------------------*/
-/* Name:  GREP EXEC - search files for text ptrns                    */
-/* Usage: grep ptrn FN [FT [FM]]                                     */
-/* Source: https://github.com/mike99mac/zvm-tools                    */
-/*-------------------------------------------------------------------*/
-parse arg "'" ptrn "'" fn ft fm rest /* check for single quotes */
+/*--------------------------------------------------------------------*/
+/* Name:  GREP EXEC - search files for text patterns                  */
+/* Usage: grep ptrn FN [FT [FM]]                                      */
+/* Source: https://github.com/mike99mac/zvm-tools                     */
+/*                                                                    */
+/*   .  - Matches any single character                                */
+/*   *  - Matches zero or more of the preceding character             */
+/*   µ  - Matches start of line                                       */
+/*   $  - Matches end of line                                         */
+/*   [] - Matches Character class - NOT IMPLEMENTED YET!!!            */
+/*   \  - Escape character for special characters                     */
+/*                                                                    */
+/*--------------------------------------------------------------------*/
+parse arg "'" ptrn "'" fn ft fm rest '(' flags ')'
 if fn = "" then                      /* no single quotes */
-  parse arg ptrn fn ft fm rest
+  parse arg ptrn fn ft fm rest '(' flags ')'
 if (ptrn = '' | ptrn = '?' | ptrn = "-h") then
   call help
+if rest <> "" then
+  echo "WARNING: ignoring extra argument:" rest
 if ft = "" then do
   echo "ERROR: missing FT"
   call help
 end
 if fm = "" then                      /* default file mode is A */
   fm = "A"
+ 
+/* set and parse flags */
+upper flags                          /* flags to upper case */
+chkCase = "yes"                      /* case must match */
+debug = "no"
+doTrace = "no"
+inverse = "no"
+numbers = "no"                       /* show line numbers */
+call parseFlags
+if doTrace = "yes" then              /* turn trace on */
+  trace i
+call debugMsg "chkCase:" chkCase
+call debugMsg "debug:" debug
+call debugMsg "doTrace:" doTrace
+call debugMsg "numbers:" numbers
+call debugMsg "inverse:" inverse
 upper fn ft fm                       /* upper case file spec */
+ 
+/* get files to search */
 'PIPE COMMAND LISTFILE' fn ft fm '| STEM files.'
 if (files.0 = 0) then do
   say "No files found matching" fn ft fm
   exit 2
 end
-do i = 1 to files.0
-  'PIPE |<' files.i '| locate /'||ptrn||'/ | stem lines.'
-  parse var files.i nx_fn nx_ft nx_fm . /* remove spaces */
-  do j = 1 to lines.0
-    say nx_fn nx_ft nx_fm||':' lines.j
+numFiles = files.0
+retVal = 1                           /* assume no match */
+ 
+/* loop through files */
+do i = 1 to numFiles
+  parse var files.i nextFN nextFT nextFM . /* remove spaces */
+  'PIPE COMMAND TYPE' files.i '| STEM lines.'
+  numLines = lines.0 - 2             /* 1st & last lines are blank */
+  call debugMsg "file:" nextFN nextFT nextFM "has" numLinex "lines"
+  do j = 2 to lines.0 - 1            /* first line is blank */
+    call debugMsg "line" j":" lines.j
+    if regex(lines.j) then do        /* match */
+      if inverse = "no" then do
+        call prtLn j-1 nextFN nextFT nextFM lines.j
+        retVal = 0                   /* a hit */
+      end
+    end
+    else do                          /* no match */
+      if inverse = "yes" then do
+        call prtLn j-1 nextFN nextFT nextFM lines.j
+        retVal = 0                   /* a non-hit */
+      end
+    end
   end
 end
-exit                                 /* GREP EXEC */
+exit retVal                          /* GREP EXEC */
  
 /*-------------------------------------------------------------------*/
-help:
-/* Give help                                                         */
+prtLn: procedure expose numbers numFiles
+/* print a line of output with or without the line number            */
 /*-------------------------------------------------------------------*/
+parse arg lineNum fn ft fm theLine
+if numFiles = 1 then                 /* do not show file name */
+  fileSpec = ""
+else                                 /* show file name */
+  fileSpec = fn ft fm":"
+if numbers = "yes" then              /* include line number */
+  say fileSpec||lineNum":"theLine
+else                                 /* no line number */
+  say fileSpec||theLine
+return                               /* prtLn() */
+ 
+/*-------------------------------------------------------------------*/
+parseFlags: procedure expose chkCase debug doTrace flags inverse numbers
+/* parse flags passed in, if any                                     */
+/*-------------------------------------------------------------------*/
+numFlags = LENGTH(flags)
+do i = 1 to numFlags
+  nextFlag = SUBSTR(flags, i, 1)
+  select
+    when nextFlag = "D" then
+      debug = "yes"
+    when nextFlag = "H" then
+      call help
+    when nextFlag = "I" then         /* ignore case */
+      chkCase = "no"
+    when nextFlag = "N" then         /* show line numbers */
+      numbers = "yes"
+    when nextFlag = "T" then         /* turn trace on */
+      doTrace = "yes"
+    when nextFlag = "V" then
+      inverse = "yes"
+    otherwise do
+      say "ERROR: unrecognized flag:" nextFlag
+      exit 8                         /* branch 2 halfwords */
+    end
+  end
+end
+return                               /* parseFlags() */
+ 
+/*-------------------------------------------------------------------*/
+debugMsg: procedure expose debug lines.
+/* Issue message in debug mode                                       */
+/*-------------------------------------------------------------------*/
+if debug = "yes" then do
+  parse arg msg
+  say msg
+end
+return                               /* debugMsg() */
+ 
+/*--------------------------------------------------------------------*/
+regex: procedure expose chkCase debug numbers ptrn
+/* Basic regular expression matching                                  */
+/* Return: 0: no match                                                */
+/*         1: match                                                   */
+/*--------------------------------------------------------------------*/
+parse arg line                       /* next line to search */
+line = STRIP(line, "T")              /* remove trailing blanks */
+ptrnLen = LENGTH(ptrn)
+lineLen = LENGTH(line)
+if chkCase = "no" then do            /* ignore case */
+  upper line                         /* fold to upper case */
+  upper ptrn
+end
+call debugMsg "ptrn:" ptrn "ptrnLen:" ptrnLen
+call debugMsg "line:" line "lineLen:" lineLen
+ 
+/* check for leading µ */
+if LEFT(ptrn, 1) = "µ" then do       /* must match begining of line */
+  call debugMsg "found leading µ"
+  ptrnLen = ptrnLen - 1              /* discount 'µ' */
+  if LEFT(line, ptrnLen) = RIGHT(ptrn, ptrnLen) then
+    return 1                         /* match */
+  else
+    return 0                         /* no match */
+end
+ 
+/* check for trailing $  */
+if RIGHT(ptrn, 1) = '$' then do      /* must match end of line */
+  call debugMsg "found trailing $"
+  ptrnLen = ptrnLen - 1              /* discount '$' */
+  if RIGHT(line, ptrnLen) = LEFT(ptrn, ptrnLen) then
+    return 1                         /* match */
+  else
+    return 0                         /* no match */
+end
+ 
+/* all other search cases */
+i = 1                                /* Pattern pointer */
+j = 1                                /* String pointer */
+do while i <= ptrnLen & j <= lineLen
+  ptrnCh = SUBSTR(ptrn, i, 1)        /* next char in pattern */
+  lineCh = SUBSTR(line, j, 1)        /* next char in line */
+  call debugMsg "i:" i "j:" j "ptrnCh:" ptrnCh "lineCh:" lineCh
+  if ptrnCh = "." then do           /* '.' matches any character */
+    if SUBSTR(ptrn, i + 1, 1) <> "*" then do /* . matches all chars */
+      i = i + 1
+      j = j + 1
+      iterate
+    end
+    else do                          /* found '.*' */
+      i = i + 1                      /* skip '*' */
+      ptrnCh = SUBSTR(ptrn, i + 1, 1)
+      lineCh = SUBSTR(line, j + 1, 1)
+      do while lineCh <> ptrnCh
+        j = j + 1
+        if j > lineLen then do       /* no match */
+          return 0
+        end
+        lineCh = SUBSTR(line, j + 1, 1)
+      end
+    end
+  end
+  if ptrnCh = lineCh then do         /* literal character match */
+    i = i + 1                        /* check next pattern char */
+    j = j + 1
+  end
+  else
+    j = j + 1
+end
+call debugMsg "Bottom of loop - i:" i "ptrnLen:" ptrnLen
+if i <= ptrnLen then
+  return 0                           /* not full pattern match */
+else                                 /* match */
+  return 1                           /* regex() */
+ 
+/*--------------------------------------------------------------------*/
+help:
+/* Give help                                                          */
+/*--------------------------------------------------------------------*/
 say "Name:  GREP EXEC - search files for text patterns"
-say "Usage: GREP 'pattern' FN FT [FM]"
+say "Usage: GREP 'pattern' FN FT [FM] [(FLAGS)]"
 say "WHERE: pattern is a single quote delimited search string"
 say "       FN FT is the file name and type to search"
 say "       FM is the file mode (default A)"
+say "Where: FLAGS can be:"
+say "         D: show debug messages"
+say "         I: ignore case"
+say "         N: show line numbers"
+say "         T: turn trace on"
+say "         V: inverse - show non-matches"
+say ""
+say "Special characters:"
+say "   .  - Matches one character"
+say "   .* - Matches one or more characters"
+say "   µ  - Matches start of line"
+say "   $  - Matches end of line"
+/* say "   [] - Matches any single character in set" */
+/* say "   \  - Escape character for special characters" */
 exit 2
  
