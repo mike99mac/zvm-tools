@@ -30,6 +30,17 @@ Tools for z/VM - many inspired by useful Linux commands
     |                  |                                                 |
     | ZVMTOOLS VMARC   | Collection of all the above tools               |
     +------------------+-------------------------------------------------+
+### TO DO
+These would be nice to have:
+
+    +------------------+-------------------------------------------------+
+    | File             | Description                                     |
+    |------------------|-------------------------------------------------|
+    | HISTORY  EXEC    | Show previous commands run                      |
+    | LOCATE   EXEC    | search for files on all CMS disks and SFS's     |
+    |          EXEC    |                                                 |
+    +------------------+-------------------------------------------------+
+
 
 ## REXX EXECs
 Following are descriptions of each REXX EXEC.
