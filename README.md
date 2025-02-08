@@ -207,7 +207,7 @@ Where: flags can be:
 
 Here is an example of using it: ... forthcoming ....
 
-### GREP EXEC(#using-grep)
+<h3 id="grep-exec">GREP EXEC</h3>
 The ``GREP EXEC`` searches for patterns in files.
 
 To search for strings with spaces, escape the pattern with single-quotes.  For example:
