@@ -39,7 +39,6 @@ Tools for z/VM - many inspired by useful Linux commands
     |------------------|-------------------------------------------------|
     | HISTORY  EXEC    | Show previous commands run                      |
     | LOCATE   EXEC    | search for files on all CMS disks and SFS's     |
-    |          EXEC    |                                                 |
     +------------------+-------------------------------------------------+
 
 
@@ -214,6 +213,24 @@ To search for strings with spaces, escape the pattern with single-quotes.  For e
 
 Here is the help:
 ```
+grep -h                                                  
+Name:  GREP EXEC - search files for text patterns        
+Usage: GREP 'pattern' fn ft [fm] [(flags)]               
+WHERE: pattern is a single quote delimited search string 
+       fn ft is the file name and type to search         
+       fm is the file mode (default A)                   
+Where: flags can be:                                     
+         D: show debug messages                          
+         I: ignore case                                  
+         N: show line numbers                            
+         T: turn trace on                                
+         V: inverse - show non-matches                   
+                                                         
+Special characters:                                      
+   .  - Matches one character                            
+   .* - Matches one or more characters                   
+   ^  - Matches start of line                            
+   $  - Matches end of line                              
 ```
 
 Here is an example of using it with two small files:
@@ -230,6 +247,7 @@ type a b a
                                                                  
 this is the file A B A                                           
 only one ERROR in this file                                      
+```
 
 - Search one file:
                                                                  
@@ -257,6 +275,30 @@ A A A1:this is the file A A A with a trailing ERROR
 A A A1:Now ERROR is in the middle                                
 A A A1:ERROR in A A A at the start of a line                     
 A B A1:only one ERROR in this file                               
+```
+
+- Search for text using wildcard for single and multiple characters:
+
+```
+grep ERR.R a a a                                               
+this is the file A A A with a trailing ERROR                   
+Now ERROR is in the middle                                     
+ERROR in A A A at the start of a line                          
+Ready; T=0.01/0.01 15:09:44                                    
+grep E.*R a a a                                                
+this is the file A A A with a trailing ERROR                   
+Now ERROR is in the middle                                     
+ERROR in A A A at the start of a line                          
+```
+
+- Search for text at start and end of lines:
+
+```
+grep ^ERROR a * a                                      
+A A A1:ERROR in A A A at the start of a line           
+Ready; T=0.01/0.01 15:05:03                            
+grep ERROR$ a * a                                      
+A A A1:this is the file A A A with a trailing ERROR    
 ```
 
 - List line numbers:
