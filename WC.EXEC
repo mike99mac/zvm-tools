@@ -31,5 +31,6 @@ do i = 1 to files.0
   totBytes = totBytes + bytes
   say FORMAT(lines, 8) FORMAT(words, 8) format(bytes, 9) files.i
 end
-say FORMAT(totLines, 8) FORMAT(totWords, 8) format(totBytes, 9) "total"
+if files.0 > 1 then
+  say FORMAT(totLines, 8) FORMAT(totWords, 8) format(totBytes, 9) "total"
  

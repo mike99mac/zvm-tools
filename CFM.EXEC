@@ -1,16 +1,15 @@
 /*-------------------------------------------------------------------*/
-/* CFN EXEC - Copy file changing only the file mode                  */
+/* CFM EXEC - Copy file changing only the file mode                  */
 /* Syntax: CFM fn1 ft1 fm1 fm2                                       */
-/* License: MIT - https://en.wikipedia.org/wiki/MIT_License          */
 /* Source: https://github.com/mike99mac/zvm-tools                    */
 /*-------------------------------------------------------------------*/
-parse upper arg fn1 ft1 fm1 fm2 rest '(' options ')'
+parse upper arg fm2 fn1 ft1 fm1 rest '(' options ')'
 if fn1 = "?" | fn1 = "" | fn1 = "-H" then do
   call help
   exit
 end
-if fn2 = "" then do
-  say "ERROR: not enough arguments
+if fm1 = "" then do
+  say "ERROR: not enough arguments"
   call help
 end
 if rest <> "" then do
@@ -30,6 +29,6 @@ help:
 say "Name:  CFM EXEC - Copy file changing only file mode"
 say "Usage: CFM fn1 ft1 fm1 fm2 ['('options')']"
 say "Where: 'fn1 ft1 fm1' is the source file:"
-say "       'fm2' is the target file mode
+say "       'fm2' is the target file mode"
 say "       'options' add to COPY command such as 'REP' or 'OLDD'"
  

@@ -1,6 +1,6 @@
 /*-------------------------------------------------------------------*/
 /* WHICH EXEC - Determine if a command is:                           */
-/*   - CP, CMS, XEDIT, TCP/IP, a REXX EXEC or a loaded EXEC          */
+/*   - CP, CMS, XEDIT, TCP/IP, REXX, an EXEC or a loaded EXEC        */
 /* Source: https://github.com/mike99mac/zvm-tools                    */
 /*-------------------------------------------------------------------*/
 /* CMS commands */
@@ -202,6 +202,22 @@ Xset = "CMDline FMode MASK PName SELect TABS ",
 ||"BFSLine ETARBCH LINENd PAn SCOPE SYNonym WRap ",
 ||"BRKkey ETMODE LRecl PENDing SCReen TABLine Zone ",
 ||"CASE FILler MACRO"
+ 
+REXXcmds = "CHAROUT DIGITS INTERPRE OPTIONS SIGN TRUNC ",
+||"ADDRESS CHARS DO ITERATE OVERLAY SIGNAL UPPER ",
+||"HELP CMSFLAG DROP JUSTIFY PARSE SOCKET USERID ",
+||"ABBREV COMPARE D2C LASTPOS POS SOURCELI VALUE ",
+||"ABS CONDITIO D2X LEAVE PROCEDURe SPACE VERIFY ",
+||"APILOAD COPIES ERRORTEXt LEFT PULL STORAGE WORD ",
+||"ARG CSL EXIT LENGTH PUSH STREAM WORDINDEx ",
+||"BITAND C2D EXTERNAL LINEIN QUEUE STRIP WORDLENGth ",
+||"BITOR C2X FIND LINEOUT QUEUED STSI WORDPOS ",
+||"BITXOR DATATYPE FORM LINES RANDOM SUBSTR WORDS ",
+||"B2X DATE FORMAT LINESIZE RETURN SUBWORD XRANGE ",
+||"CALL DELSTR FUZZ MAX REVERSE SYMBOL X2B ",
+||"CENTER DELWORD IF MIN RIGHT TIME X2C ",
+||"CENTRE DIAG INDEX NOP SAY TRACE X2D ",
+||"CHARIN DIAGRC INSERT NUMERIC SELECT TRANSLATe"
  
 /*-------------------------------------------------------------------*/
 /* main() - parse args, handle commands/QUERY/SET differently        */
@@ -413,7 +429,7 @@ return                                     /* setCmd() */
  
 /*-------------------------------------------------------------------*/
 otherCmds: procedure expose cmd arg1 CMScmds CPcmds TCPIPcmds Xcmds,
-  debug helpFlag numCmds verbose
+  REXXcmds debug helpFlag numCmds verbose
 /* Not QUERY nor SET command - check all other one word commands     */
 /*-------------------------------------------------------------------*/
 if arg1 <> "" then do                      /* only Q & SET add args */
@@ -447,6 +463,10 @@ end
 do i = 1 to WORDS(Xcmds)                   /* check if XEDIT command */
   nextArg = WORD(Xcmds, i)
   call checkArg("XEDIT" "CMD" cmd nextArg)
+end
+do i = 1 to WORDS(REXXcmds)                /* check if REXX command */
+  nextArg = WORD(REXXcmds, i)
+  call checkArg("REXX" "CMD" cmd nextArg)
 end
 return                                     /* otherCmds() */
  

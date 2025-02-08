@@ -1,7 +1,6 @@
 /*-------------------------------------------------------------------*/
 /* CALCOSA EXEC - compute OSA statistics from CP QUERY OSA           */
 /* Syntax: CALCOSA [-H] [(FLAGS]                                     */
-/* License: MIT - https://en.wikipedia.org/wiki/MIT_License          */
 /* Source: https://github.com/mike99mac/zvm-tools                    */
 /*-------------------------------------------------------------------*/
 verbose = 1

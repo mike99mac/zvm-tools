@@ -1,24 +1,19 @@
 /*-------------------------------------------------------------------*/
 /* RFN EXEC - Rename file changing only the file name                */
 /* Syntax: RFN fn1 ft1 fm1 fn2                                       */
-/* License: MIT - https://en.wikipedia.org/wiki/MIT_License          */
 /* Source: https://github.com/mike99mac/zvm-tools                    */
 /*-------------------------------------------------------------------*/
-parse upper arg fn1 ft1 fm1 fn2 rest
+parse upper arg fn2 fn1 ft1 fm1 rest
 if fn1 = "?" | fn1 = "" | fn1 = "-H" then do
   call help
   exit
 end
-if fn2 = "" then do
-  say "ERROR: not enough arguments
-  call help
-end
-if fn2 = "" then do
-  say "ERROR: not enough arguments
+if fm1 = "" then do
+  say "ERROR: not enough arguments"
   call help
 end
 if rest <> "" then do
-  say "ERROR: too many arguments
+  say "ERROR: too many arguments"
   call help
 end
 "RENAME" fn1 ft1 fm1 fn2 "= ="
@@ -29,7 +24,7 @@ help:
 /* Give help                                                         */
 /*-------------------------------------------------------------------*/
 say "Name:  RFN EXEC - Rename file changing only file name"
-say "Usage: RFN fn1 ft1 fm1 fn2
-say "Where: 'fn1 ft1 fm1' is the source file:"
-say "       'fn2' is the target file name
+say "Usage: RFN fn2 fn1 ft1 fm1"
+say "Where: 'fn2' is the new file name"
+say "       'fn1 ft1 fm1' is the source file"
  
