@@ -78,7 +78,7 @@ Total SYSTEM   cylinders: 1892676 (1498.22 GiB)
 ```
 
 ### CALCOSA EXEC
-The ``CALCOSA EXEC`` merges free and used OSAs by ``rdev``, and verifies the CHPIDs and PCHIDs. 
+The ``CALCOSA EXEC`` merges free and used OSAs by ``rdev`` and verifies the CHPIDs and PCHIDs. 
 
 Here is the help:
 ```
@@ -136,7 +136,7 @@ Where: 'fn2' is the target file name
        'options' add to COPY command such as 'REP' or 'OLDD' 
 ```
 
-Here is an example of using it from within FILELIST to copy an EXEC with a new file name of ``foo``:
+Here is an example of using it from within FILELIST to copy an EXEC with a new file name of ``FOO``:
 
 ```
  MIKEMAC  FILELIST A0  V 169  Trunc=169 Size=50 Line=1 Col=1 Alt=0              
@@ -150,27 +150,42 @@ The ``CFT EXEC`` copies a file just changing the file type.
 
 Here is the help:
 ```
+cft -h                                                         
+Name:  CFT EXEC - Copy file changing only file type            
+Usage: CFT ft2 fn1 ft1 fm1 ['('options')']                     
+Where: 'ft2' is the target file type                           
+       'fn1 ft1 fm1' is the source file:                       
+       'options' add to COPY command such as 'REP' or 'OLDD'   
 ```
-
-Here is an example of using it:
 
 ### COPYDISK EXEC
 The ``COPYDISK EXEC`` first tries to copy a disk with ``FLASHCOPY`` and if that fails, falls back to ``DDR``.
 
 Here is the help:
 ```
+copydisk ?                                                   
+Name:  COPYDISK EXEC - copy minidisk with FLASHCOPY or DDR   
+Usage: COPYDISK source_vdev target_vdev                      
 ```
-
-Here is an example of using it:
 
 ### CPFORMAT EXEC
 The ``CPFORMAT EXEC`` formats one or more DASD volumes using ``CPFMTXA``.
 
 Here is the help:
 ```
+cpformat ?                                                     
+Name: CPFORMAT EXEC                                            
+ Format and label DASD as page, perm, spool or temp disk space 
+ The label written to each DASD is J<t><xxxx> where:           
+ <t> is type - P (page), M (perm), S (spool) or T (Temp disk)  
+ <xxxx> is the 4 digit address                                 
+Syntax:                                                        
+             <---------------<                                 
+ >>--CPFORMAT--.-vdev--------.--AS---.-PERM-.---------><       
+               '-vdev1-vdev2-'       '-PAGE-'                  
+                                     '-SPOL-'                  
+                                     '-TEMP-'                  
 ```
-
-Here is an example of using it:
 
 ### DIFF EXEC
 The ``DIFF EXEC`` compares two files and shows the results with color.
@@ -180,11 +195,19 @@ Updates will be coming.
 
 Here is the help:
 ```
+diff -h                                            
+Name : DIFF EXEC - compare two files               
+Usage: diff fn1 ft1 fm1 fn2 ft2 fm2 [( flags )]    
+Where: 'fn1 ft1 fm1' is the first file to compare  
+       'fn2 ft2 fm2' is the second file to compare 
+Where: flags can be:                               
+         S: silent - no output                     
+         V: verbose                                
 ```
 
-Here is an example of using it:
+Here is an example of using it: ... forthcoming ....
 
-### GREP EXEC
+### GREP EXEC(#using-grep)
 The ``GREP EXEC`` searches for patterns in files.
 
 To search for strings with spaces, escape the pattern with single-quotes.  For example:
@@ -193,10 +216,76 @@ Here is the help:
 ```
 ```
 
-Here is an example of using it:
+Here is an example of using it with two small files:
 
 ```
-grep 'parse upper arg' * exec
+type a a a                                                       
+                                                                 
+this is the file A A A with a trailing ERROR                     
+Now ERROR is in the middle                                       
+Another error in lower case                                      
+ERROR in A A A at the start of a line                            
+                                                                 
+type a b a                                                       
+                                                                 
+this is the file A B A                                           
+only one ERROR in this file                                      
+
+- Search one file:
+                                                                 
+```
+grep ERROR a a a                                                 
+this is the file A A A with a trailing ERROR                     
+Now ERROR is in the middle                                       
+ERROR in A A A at the start of a line                            
+```
+
+- Search for text with spaces: 
+                                                                 
+```
+grep 'ERROR in' a * a                       
+A A A1:Now ERROR is in the middle           
+A A A1:ERROR in A A A at the start of a line
+A B A1:only one ERROR in this file          
+```
+
+- Search multiple files:
+
+```
+grep ERROR a * a                                                 
+A A A1:this is the file A A A with a trailing ERROR              
+A A A1:Now ERROR is in the middle                                
+A A A1:ERROR in A A A at the start of a line                     
+A B A1:only one ERROR in this file                               
+```
+
+- List line numbers:
+
+```
+grep ERROR a * a (n                                              
+A A A1:1:this is the file A A A with a trailing ERROR            
+A A A1:2:Now ERROR is in the middle                              
+A A A1:4:ERROR in A A A at the start of a line                   
+A B A1:2:only one ERROR in this file                             
+```
+
+- Ignore case:
+
+```
+grep ERROR a * a (i                                              
+A A A1:this is the file A A A with a trailing ERROR              
+A A A1:Now ERROR is in the middle                                
+A A A1:Another error in lower case                               
+A A A1:ERROR in A A A at the start of a line                     
+A B A1:only one ERROR in this file                               grep 'parse upper arg' * exec
+```
+
+- Inverse output:
+
+```
+grep ERROR a * a (v               
+A A A1:Another error in lower case
+A B A1:this is the file A B A     
 ```
 
 ### MAN EXEC

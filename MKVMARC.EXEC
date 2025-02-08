@@ -1,0 +1,32 @@
+/*-------------------------------------------------------------------*/
+/* MKVMARC EXEC - Create a VMARC file of all zvm-tools               */
+/*-------------------------------------------------------------------*/
+files.1 = "CALCDASD EXEC A "
+files.2 = "CALCOSA  EXEC A "
+files.3 = "CFM      EXEC A "
+files.4 = "CFN      EXEC A "
+files.5 = "CFT      EXEC A "
+files.6 = "COPYDISK EXEC A "
+files.7 = "CPFORMAT EXEC A "
+files.8 = "DIFF     EXEC A "
+files.9 = "GREP     EXEC A "
+files.10 = "MAN      EXEC A "
+files.11 = "QA       EXEC A "
+files.12 = "RFN      EXEC A "
+files.13 = "RFT      EXEC A "
+files.14 = "RM       EXEC A "
+files.15 = "SPC      EXEC A "
+files.16 = "SSICMD   EXEC A "
+files.17 = "WC       EXEC A "
+files.18 = "WHICH    EXEC A "
+files.19 = "WHO      EXEC A "
+files.20 = "BF       XEDIT A "
+files.21 = "PROFFLST XEDIT A "
+files.22 = "PROFILE  XEDIT A"
+ 
+vmarcFile = "ZVMTOOLS VMARC A"   /* Name of the VMARC file */
+do i = 1 to 22
+  address COMMAND "VMARC PACK" files.i vmarcFile "(APPEND"
+end
+say "Created file:" vmarcFile
+ 

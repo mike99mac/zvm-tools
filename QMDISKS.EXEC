@@ -1,0 +1,500 @@
+/**********************************************************************
+ This exec will LINK to all minidisks in source of CP DIRECTORY and
+ produce a listing with Q DISK info for these mdisks, can also aid during
+ migration to a different DASD-type
+
+ The correct syntax is : (Minimum abbreviations shown in uppercase)
++-----------------------------------------------------------------------+
+| QMDISKS <director-fileid> <( 'options'                                |
+|  'options': <Xedit> <Sort User | Volume | Full | % | Wasted >         |
+|             <Map | Nomap >  <Diskblk <devt>> <RACF>                   |
+|             <FROM userid> <Exclude>                                   |
++-----------------------------------------------------------------------+
+Parameters: fileid of the CP DIRECTORY
+            default: VMUSERS DIRECT *
+
+An output file QMDISKS LIST A will be created
+
+Options:
+-XEDIT
+   To XEDIT output file after creation.
+-MAP (strongly recommended option, could be made default)
+   To update 'fn' MDISKMAP with '%full' and 'nb-files' information
+   It is up to you to create a 'fn' MDISKMAP of your directory via
+   the IPF DIRMAP command.
+-SORT:
+   To sort the output file:
+   -USER             Sort output file by: userid, mdiskaddr
+   -VOLUME | VOLID   Sort output file by: real volid, userid , mdiskaddr
+   -FULL | PCT | %   Sort output file by: %full, userid , mdiskaddr
+   -WASTED           Sort output file by: wasted space (impossible if
+                      DISKBLK option is used)
+   Default: Mdisks appear as listed in directory
+-DISKBLK:
+   Then QMDISKS will call DISKBLK EXEC to find optimum blksize.
+   (see DISKBLK EXEC for more info about it).
+   Using this option will take much more execution time.
+-'devt'
+   then DISKBLK will calculate requirements for another devicetype:'devt'
+   (so then it can help for migration from 3370 to 3380 for example.)
+-RACF:
+   Then QMDISKS will hope the user running QMDISKS is defined to RACF
+   with the OPERATIONS attribute what allows it to LINK R/O to any,
+   or if RACF is not used, that OPTION LNKNOPAS is active.
+
+-FROM userid:
+   Then QMDISKS start in directory from this "userid" on and append
+   data to existing file.  (usefull after abend for example)
+
+-EXCLUDE
+   Will use QMDISKS EXCLUDE file to exclude users and/or Mdisks
+   Format of records:
+        1          10
+        userid     mdsk  /* exclude this mdisk for this user */
+   or   userid     *     /* exclude all mdisks for this user */
+   or   us*        *     /* exclude users starting with "us" */
+
+Notes:
+ 1. When no sort option is given: the output will be in the same order as
+    the MDISK statements of the directory.
+
+ 2. The exec uses GETFMADR (part of IPF) to find linkaddr and free mode
+    (if GETFMADR not available: uses 100 and Z, which you should free
+     before starting QMDISKS)
+
+ 3. For DISKBLK option you need a DISKBLK exec supporting the LIFO option
+    (present on KRIS' GOODIES tape)
+HELP-END
+ 19/08/86      written by  : Dany Demaerschalk
+ 21/08/86      adapted by Kris Buelens:  BUELENS at DIEVMD
+ 25 Oct 1989  updated to corect a REXX abend & FINIS listings
+ 13 Oct 1987: updated: PCT must always be 2 characters
+ 20 Feb 1990: fill in size of wasted space if not using DISBLK option
+ 16 May 1990: record also START of minidisks to sort better on VOLUME
+ 25 Nov 1991: Support RACF
+ 16 Jul 1992: Print WNG msg if CMS-size^=CP-size
+ 12 Nov 1992: Remove leading 0 in 4-digit cuu's
+ 25 Oct 1993: Avoid REXX Syntax error for OS/DOS disks
+ 25 Oct 1993: Added FROM option
+ 09 Nov 1999: Several bug fixes, use of ACCESSM0
+ 14 Dec 1999: GDC - added exclude options
+  5 Aug 2005: Include runtime options in QMDISKS LIST
+ 31 Jan 2025: Also take IDENTITY to find users
+***********************************************************************/
+parse source . . myname mytype . syn .
+parse upper arg  fn ft fm  rest "(" options 0 '(' OrgOptions
+address command
+msgt='30' /* give every 30 seconds a message: still working*/
+parse value '0   0     0       0    0      0' ,
+      with   map xedit diskblk racf append exclude from sort devt /*defs*/
+if fn='' then fn = 'VMUSERS'
+if ft='' then ft = 'DIRECT'
+if fm='' then fm = '*'
+lijst = myname 'LIST A';userid='unknown '
+if fn = ? then signal help
+if rest ^= '' then
+   call Errexit 5,'Too many parameters have been given',,
+                   'Only filename, filetype and filemode of',
+                       'the directory have to be given.'
+do i=1 to words(options)
+ option=word(options,i)
+ select
+  when abbrev('MAP',option,1) then map=1
+  when abbrev('NOMAP',option,1) then map=0
+  when abbrev('RACF',option,1) then racf=1
+  when abbrev('XEDIT',option,1) then xedit=1
+  when abbrev('EXCLUDE',option,1) then exclude=1
+  when abbrev('SORT',option,1) then do
+     parse value i+1 word(options,i+1) with i sort
+     select
+       when abbrev('WASTED',sort,1) then sort='W'
+       when abbrev('USERID',sort,1) then sort='U'
+       when abbrev('VOLID',sort,1)| abbrev('VOLUME',sort,1) then sort='V'
+       when abbrev('FULL',sort,1) | sort='%' | abbrev('PCT',sort,1) then sort='F'
+       otherwise
+         call ErrExit 5,'Invalid SORT option:' sort '('myname '? for HELP)'
+      end /*select*/
+  end /*SORT option*/
+  when abbrev('DISKBLK',option,1) then do
+    parse value 1 i+1 word(options,i+1) with diskblk i devt
+    if ^(datatype(devt,'W') & length(devt)=4) then
+        parse value i-1 with i devt
+  end /*DISKBLK option*/
+  when option='FROM' then do
+    parse value 1     i+1 word(options,i+1),
+          with append i   from
+    if from='' then
+       call ErrExit 5,'Invalid FROM definition: must be FROM userid'
+  end /*FROM option*/
+  otherwise
+    call ErrExit 5,'Invalid option:' option'   ('myname '? for HELP)'
+ end /* Select */
+end i
+'ESTATE' fn ft fm
+if RC^=0 then
+   call ErrExit rc,'Directory 'fn ft fm ' not found'
+if diskblk & sort='W' then
+   call ErrExit 5,'Sort option "WASTED" invalid with DISKBLK option.'
+if map then do
+  'ESTATEW' fn 'MDISKMAP *'
+  if RC^=0 then do;map=0
+     say 'Minidiskmap 'fn 'MDISKMAP not found on any R/W',
+         'disk, MAP option ignored.'
+  END
+END
+if diskblk then do
+  'ESTATE DISKBLK EXEC *'
+  if RC^=0 then do ; diskblk=0
+     say 'DISKBLK EXEC * needed for DISKBLK option, option ignored.'
+  END
+end
+if exclude then do
+  'ESTATE QMDISKS EXCLUDE *'
+  if rc<>0 then do ; exclude=0
+     say 'QMDISKS EXCLUDE not found, option ignored.'
+  end;else do
+     'PIPE (end ?) < QMDISKS EXCLUDE *',
+         '|NFIND *'||,
+         '|XLATE UPPER',
+         '|SPECS W1 1.8 w2 10.4',
+         '|SORT 1.8',
+         '|O:FANOUT',
+         '|Gen:NLOCATE 1.8 /*/',
+         '|GMd:NLOCATE 10.4 /*/',
+         '|JOIN KEYLENGTH 8 / /',
+         '|Specs %/MDKEXCLUDE.% 1 w1 n %/% n w2-* n',
+         '|VARLOAD',
+         '?Gen:',
+            '|XLATE 1.8 * 40',
+            '|CHOP 8|STRIP',
+            '|JOIN * / /',
+            '|VAR GENEXCLUDES',
+         '?GMd:',
+            '|SPECS %/USREXCLUDE.% 1 w1 n %/1% n',
+            '|VARLOAD',
+         '?O:|CHANGE //* /',
+            '|LITERAL *Exclusions as specified in QMDISKS EXCLUDE:',
+            '|STEM COMMENT.'
+  end
+end
+'GETFMADR'
+ if rc=0 then parse pull . accmode linkaddr .
+         else do /* check if 100 and mode Z are free */
+          'STATE * * Z' ; ok=(rc^=0)
+          'EXECIO 0 CP (STRING Q V 100' ; ok=(rc^=0) & ok
+          if ^ok then
+            Call ErrExit 5,'Free disk 100 and mode Z, then restart.'
+          parse value 'Z 100' with accmode linkaddr .
+        end
+
+'QUERY ACCESSM0 (STACK'
+parse pull . m0 .
+mode0=(m0='ON')
+if \mode0 then do    /* try to get it */
+  parse value diagrc(8,'LINK MAINT 193' linkaddr 'RR') with rc . 17 cpmsg
+  if rc<>0 then leave
+  'PIPE COMMAND ACCESS' linkaddr accmode
+  'ACCESSM0 ON'
+  if rc=0 then do;mode0=1;call diag 8,'DETACH' linkaddr;end
+end
+
+'ESTATE' lijst
+newlist=(rc=28)
+if RC=0 & ^append then DO
+             say 'There is already a file' lijst
+               DO until (ant='Y') | (ant=N)
+                 say 'Can I delete it ?  Y or N'
+                 parse upper external ant
+               end
+             if ant='Y' then DO;'ERASE' lijst
+                  newlist=1
+                  if RC^=0 then call diskerror
+             end
+             else exit
+end
+parse value diag(8,'QUERY USERID') with . . here . '15'x
+say 'QMDISKing directory' fn ft fm' into' lijst' (takes much time) ...'
+if diskblk then 'EXECLOAD DISKBLK EXEC *'
+if newlist then do
+call schrijf '*  Minidisk listing of 'fn ft fm 'at' here date() 'at' time()
+call schrijf '*  Options used:' OrgOptions
+call schrijf '*'
+if \mode0 then do
+call schrijf "*Note: We try to get ACCESSM0 to see mode '0' files; if this fails:"
+call schrijf "*      - disks with only mode 0 files can not even be ACCESS'd",
+"(indicated by message in the MAP)"
+call schrijf "*      - number of files shown does not include mode'0' files"
+call schrijf "*      - % occupancy is correct however"
+call schrijf "*      - avg blks/file is not correct"
+call schrijf '*      - DISKBLK output is not 100% accurate either'
+call schrijf '*'
+end; else
+call schrijf '*Note: ACCESS Mode 0 files was enabled.'
+call schrijf '*Note: BLKSIZE 4K will minimise I/O and is probably always best'
+call schrijf '*'
+if exclude then do i=1 to comment.0
+   call schrijf comment.i
+end
+call schrijf '*'
+call schrijf '*<----------- Directory ----------->',
+             '<------ CMS info ----->',
+             '<------ Calculations ----------------->',
+             '<----Messages----->'
+a=           '*Userid  Mdsk Volid    Start    Size',
+             'Volser Blksz Pct  Files',
+             'avg blk '
+b=           '*                                   ',
+             '                       ',
+             ' /file  '
+if diskblk then do
+   a=a'mininimum cyl/FBA-blocks needed'
+   b=b'    512      1K      2K      4K'
+end
+else do
+   a=a' wasted    date last modified'
+   b=b'cyls|blks'
+end
+call schrijf a
+call schrijf b
+call schrijf left('*',120,'_')
+end /* if newlist */
+space=left('',64) /* space used by CMS values */
+space2=left('',63) /* space used by CMS values without label */
+'FINIS' fn ft fm
+'DROPBUF'
+thisuser=userid() /* don't need passwords for myself */
+if from<>'' then fromuser='|STRFRLABEL /USER' from'/'
+            else fromuser=''
+
+'PIPE (end ?)',
+     '|    < QMDISKS EXCLUDE *',
+     '|    NFIND *'||,
+     '|    XLATE UPPER',
+     '|    CHOP 15',
+     '|    SPECS W1 1.8 W2 NW.4',
+     '|    SORT 1.8 D',
+     '|    CHANGE 10.4 /*   /    /',
+     '|    CHANGE 1.8 /*/ /',
+     '|    SPECS /||NFIND / 1 1.13 N',
+     '|    JOIN *',
+     '|    VAR EXCLUDE'
+
+'PIPE (end ?)',
+     '|    <' fn ft fm,
+     '|    STRIP LEADING',
+     fromuser,
+     '|Md: NFIND MDISK'||,
+     '|Us: FIND USER'||,
+     '|Jn: FANINANY'||,
+     '|    SPECS W2 1.9',
+     '|Jx: JUXTAPOSE',
+     exclude,
+     '|    STEM USERMDK.',
+     '?Us:|FIND IDENTITY|Jn:',
+     '?Md:|SPECS PAD 0 w2 1.4 right pad 40 w6 nw.6 pad 0 w4 nw.7 right',
+                'w5 nw.7 right pad 40 w3 nw.8 w8 nw',
+     '|    Jx:'
+if mode0 then acoptm0='(MODE0'; else acoptm0=''
+DO i=1 to usermdk.0
+   parse upper var usermdk.i 1 userid 9 10 addr 14 15 volser 21,
+                            22 begin 29 30 lengte 37 38 type . 47 pass .
+   t=time('E')
+   if t>=msgt then do ; t=time('R')
+      say time()': Working on user 'i ':' userid 'Mdisk' addr
+      'CONWAIT'
+   end
+   lijn = userid addr volser begin lengte
+   if racf & pass='' then pass='NO:RACF'
+   if pass='' & userid^=thisuser then
+      call schrijf lijn '*ERROR'||left('',58)||'NoLINK:no READ pw'
+   else do   /* link userid */
+     wng=''
+     parse value diagrc(8,'LINK' userid addr linkaddr 'RR' pass) with,
+                       1 rc . 17 cpmsg
+     if rc<>0 then do
+        select
+          when rc=298 then do
+            if wordpos('RPIMGR031E',cpmsg)>0 then cpmsg='No RACF define'
+                                             else cpmsg='No RACF permit'
+          end
+          when rc=114 then cpmsg='Invalid READ pw'
+          when rc=111 then cpmsg='NoLINK:no READ pw'
+          when rc=107 then cpmsg='Undefined to CP'
+          when rc=108 then cpmsg='DASD not mounted'
+          otherwise nop
+        end
+        call schrijf lijn '*ERROR'||left('',58)||cpmsg
+     end /* if not linkable */
+     else do          /* seems linked ok so, access the minidisk */
+        'PIPE COMMAND CMDCALL ACCESS' linkaddr accmode acoptm0'|VAR ACCMSG'
+        arc=rc
+        if arc=0 then do
+/*---output of:  Q DISK T -----------------------------------------------
+LABEL  VDEV M  STAT   CYL TYPE BLKSZ   FILES  BLKS USED-(%) BLKS LEFT  BLK TOTAL
+VDK199 199  T   R/W    FB 9336 1024        0          6-75          2          8
+DSK191 191  A   R/W    20 3390 4096      134       2851-79        749       3600
+--words:----W3--W4-----W5-W6---W7--------W8--------W9-------------W10-------W11*/
+           'QUERY DISK 'accmode' (STACK'
+           pull .
+           parse pull cmsnaam 7 8 cuu mod stat cyl .,
+                      blksz files used '-' pct left tot .
+           pct=right(pct,2)
+           lijn = lijn left(cmsnaam,6)
+           select
+            when files=0 then do
+               if map then call updatemap 'Empty'
+               lijn=lijn '*empty       00%      0'||left('',44)||"Empty disk"
+            end
+            when datatype(blksz,'W') then DO
+               parse value diskdat() with reserved lastmodif
+               if cyl='FB' then cl=blksz*tot
+                           else cl=cyl
+               Select
+                when lengte=cl then nop
+                when lengte<cl then wng='ERROR CPsize<CMSsize'
+                otherwise           wng='WNG   CPsize>CMSsize'
+               end
+               avgused=used/files
+               select
+                 when reserved then avgused='RESERVD'
+                 when avgused>99999 then avgused='*>100K*'
+                 otherwise avgused=format(avgused,5,1)
+               end
+               lijn=lijn right(blksz,5) pct'%' right(files,6),
+                      avgused
+               if DISKBLK then lijn=lijn diskblk()
+               else do
+                  if reserved & pct=99 then wasted=0
+                  else wasted =lengte - lengte*pct/100
+                  if type='FB-512' then lijn=lijn format(wasted,6,0)
+                                   else lijn=lijn format(wasted,4,2)
+                  lijn=lijn'   'lastmodif
+               end
+               if map     then lijn=lijn updatemap(pct'%' right(files,7))
+               lijn=overlay(wng,lijn,102)
+            end /* numeric blksize */
+            otherwise lijn=lijn'  ' blksz files used /*OS or DOS disks*/
+           end
+           call schrijf lijn
+           'REL' accmode
+        end /* if accessible */
+        else do /* if not accessed */
+          if arc=28 then do
+                if map then call updatemap 'Empty ??'
+                lijn=lijn '*empty       00%      0'||left('',41)||"Empty"
+                if \mode0 then lijn=lijn "or m0 files"
+                call schrijf lijn
+              end
+              else do
+                if map then call updatemap 'Not Formatted'
+                call schrijf lijn '*ERROR'||left('',58)||'Not formatted'
+              end
+        end /* if not accessable */
+        'EXECIO 0 CP (STRING DET' linkaddr
+     end /* if linkable */
+   end/* MDISK with read pw */
+END /* read DIRECTORY loop */
+/* closing */
+EINDE:
+if diskblk then 'EXECDROP DISKBLK EXEC'
+'FINIS' lijst
+if map then 'FINIS' fn 'MDISKMAP *'
+if ^xedit & sort='' then do
+   Say 'File' lijst 'created.'
+   exit
+   end
+if sort^='' then do
+  select
+   when sort='F' then mar='58 59 1 13'
+   when sort='V' then mar='15 27 1 13'
+   when sort='W' then mar='80 86'
+   otherwise          mar='1 13'
+   end
+ Say 'Sorting' lijst '.....'
+ queue 'COMMAND -* COMMAND /____________/ COMMAND +1 MACRO SORT *' mar
+end
+if ^xedit then queue 'COMMAND FILE'
+          else queue 'COMMAND :1 COMMAND SAVE'
+if ^xedit then 'XEDIT' lijst '(NOPROF'
+          else 'XEDIT' lijst
+exit rc
+
+schrijf:
+ 'EXECIO 1 DISKW' lijst '(STRING' arg(1)
+  if rc=0 then return
+diskerror:
+  say 'An error occurred while writing file 'lijst
+  say 'You should check disk 'fm;say 'Execution stopped'
+  exit
+
+UPDATEMAP: procedure expose fn userid addr
+  parse arg pct files
+  ad=left(userid,9) right(strip(addr,'L'),4,0)
+ 'EXECIO * DISKR' fn 'MDISKMAP A 1 (ZONE 18 31 LOCATE /'ad'/'
+  if rc^=0 then return 'Minidisk not found in' fn 'MDISKMAP'
+  parse pull linnb .
+  parse pull lin
+  if substr(lin,66,1)^==' ' then col=68 /* New map */
+                            else col=65 /* old map */
+
+ 'EXECIO 1 DISKW' fn 'MDISKMAP A' linnb '(STRING' left(lin,col)pct files
+  if rc^=0 then return 'Error updating' fn 'MDISKMAP'
+ return ''
+
+DISKDAT:   /* Show disk dates and whether it is reserved */
+/* Note: Block 3 of disk=label with 45-47 creation date x'YYMMDD'
+                                    48-50 creation time x'HHMMSS'
+                                    20    pointer to active directory
+                                    53-56 x'00000000' if not reserved
+                                          else block offset of data
+         Active directory (4 or 5)  55-57 last ref date x'YYMMDD'
+                                    58-60 last ref time x'HHMMSS'
+*/
+ 'PIPE (end ?) MDISKBLK' accmode '3.2', /* read blocks 3 to 5 of disk */
+      '|T:  TAKE',
+      '|    SPECS 53.4 c2d 1',
+      '|    VAR RSRVD',
+      '?T:| SPECS 55.3 c2x 1 58.3 c2x nw',
+      '|    SPECS 1.2 1 %/% n 3.2 n %/% n 5.2 n',
+                 '8.2 10 %:% n 10.2 n %:% n 12.2 n',
+      '|    SORT 1-* D',     /* take most recent */
+      '|    DATECONV 1.8 REXXO ISO',
+      '|    VAR LASTUPD'
+
+return (rsrvd<>0) lastupd
+
+
+DISKBLK:
+ 'EXEC DISKBLK' accmode devt '(LIFO'
+  if rc=0 & queued^=0 then do;
+     parse pull . . c5 c1k c2k c4k .
+     if find(c5 c1k c2k c4k,'99999.99')<>0 then
+        return right(c5,7) ,
+               right(c1k,7) ,
+               right(c2k,7) ,
+               right(c4k,7)
+     /* we have to trunc values because of a REXX bug */
+     return left(format(c5+0.05,5,2),7) ,
+            left(format(c1k+0.05,5,2),7) ,
+            left(format(c2k+0.05,5,2),7) ,
+            left(format(c4k+0.05,5,2),7)
+     end /* if diskblk ok */
+  else return left('',32)
+
+HELP:
+  do n=1 for 99
+     line = SOURCELINE(n)
+     if "SUBSTR"(line,1,8) = "HELP-END" then leave
+     SAY line
+  end
+/***********************************************************************/
+ErrExit:
+ 'RTNSTATE DMSINXED'
+ if Rc<>0 then do; 'SUBCOM XEDIT' ; Xedit=(rc=0); end
+ else do; call csl 'DMSINXED RETC REAS T'; Xedit=(reas=0 & t=0) ; end
+ do i=2 to arg()
+    if xedit then address 'XEDIT' 'COMMAND EMSG' myname':' arg(i)
+             else say myname':' arg(i)
+ end
+EXIT:
+ exit arg(1)
