@@ -1,4 +1,8 @@
 # zvm-tools
+These are tools for z/VM, many based on Linux commands.
+
+Some emulate commonly used Linux commands such as ``diff``, ``grep``, ``man``, ``rm``, ``wc`` and ``who``. Others are more specific to z/VM such as ``calcdasd``, ``copydisk``, ``cpformat`` and ``ssicmd``. 
+
 The following tools for z/VM are in this repository - many were inspired by useful Linux commands:
 
     +------------------+-------------------------------------------------+
@@ -31,17 +35,6 @@ The following tools for z/VM are in this repository - many were inspired by usef
     |                  |                                                 |
     | ZVMTOOLS VMARC   | Collection of all the above tools               |
     +------------------+-------------------------------------------------+
-### TO DO
-#### Possible new EXECs:
-
-    +------------------+-------------------------------------------------+
-    | File             | Description                                     |
-    |------------------|-------------------------------------------------|
-    | HISTORY  EXEC    | Show previous commands run                      |
-    | LOCATE   EXEC    | search for files on all CMS disks and SFS's     |
-    +------------------+-------------------------------------------------+
-
-
 ## REXX EXECs
 Following are descriptions of each REXX EXEC.
 
@@ -477,7 +470,7 @@ SSL00005 - DSC
 ## XEDIT Macros
 Following are descriptions of each XEDIT macro.
 
-## BF.XEDIT
+### BF.XEDIT
 The ``BF XEDIT`` macro takes you to the last screen of a file. 
 
 ### PROFFLST.XEDIT
@@ -503,4 +496,13 @@ The ``VMARC`` tool to decompress it does not ship with z/VM. If you don't have a
 PIPE < VMARC MODULE A | deblock cms | > VMARC MODULE A
 ```
 
+### TO DO
+#### Possible new EXECs:
+
+    +------------------+-------------------------------------------------+
+    | File             | Description                                     |
+    |------------------|-------------------------------------------------|
+    | HISTORY  EXEC    | Show previous commands run                      |
+    | LOCATE   EXEC    | search for files on all CMS disks and SFS's     |
+    +------------------+-------------------------------------------------+
 
