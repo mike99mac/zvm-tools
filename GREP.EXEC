@@ -2,14 +2,11 @@
 /* Name:  GREP EXEC - search files for text patterns                  */
 /* Usage: grep ptrn FN [FT [FM]]                                      */
 /* Source: https://github.com/mike99mac/zvm-tools                     */
-/*                                                                    */
 /*   .  - Matches any single character                                */
 /*   *  - Matches zero or more of the preceding character             */
 /*   µ  - Matches start of line                                       */
 /*   $  - Matches end of line                                         */
 /*   [] - Matches Character class - NOT IMPLEMENTED YET!!!            */
-/*   \  - Escape character for special characters                     */
-/*                                                                    */
 /*--------------------------------------------------------------------*/
 parse arg "'" ptrn "'" fn ft fm rest '(' flags ')'
 if fn = "" then                      /* no single quotes */
@@ -195,8 +192,10 @@ do while i <= ptrnLen & j <= lineLen
     i = i + 1                        /* check next pattern char */
     j = j + 1
   end
-  else
-    j = j + 1
+  else do
+    i = 1                            /* back start of pattern */
+    j = j + 1                        /* check next line char */
+  end
 end
 call debugMsg "Bottom of loop - i:" i "ptrnLen:" ptrnLen
 if i <= ptrnLen then
@@ -209,11 +208,11 @@ help:
 /* Give help                                                          */
 /*--------------------------------------------------------------------*/
 say "Name:  GREP EXEC - search files for text patterns"
-say "Usage: GREP 'pattern' FN FT [FM] [(FLAGS)]"
-say "WHERE: pattern is a single quote delimited search string"
-say "       FN FT is the file name and type to search"
-say "       FM is the file mode (default A)"
-say "Where: FLAGS can be:"
+say "Usage: GREP 'pattern' fn ft [fm] [(flags)]"
+say "Where: pattern is a single quote delimited search string"
+say "       fn ft is the file name and type to search"
+say "       fm is the file mode (default A)"
+say "Where: flags can be:"
 say "         D: show debug messages"
 say "         I: ignore case"
 say "         N: show line numbers"

@@ -230,7 +230,6 @@ end
 if cmd == '' | cmd == "?" | cmd == "-H" then
   call help
 upper flags                          /* flags to upper case */
-/* trace i */
 debug = "no"
 doTrace = "no"
 helpFlag = "no"
@@ -239,10 +238,10 @@ verbose = "no"
 call parseFlags
 if doTrace = "yes" then              /* turn trace on */
   trace i
-call debugMsg("debug:" debug)
-call debugMsg("helpFlag:" helpFlag)
-call debugMsg("doTrace:" doTrace)
-call debugMsg("verbose:" verbose)
+call debugMsg "debug:" debug
+call debugMsg "helpFlag:" helpFlag
+call debugMsg "doTrace:" doTrace
+call debugMsg "verbose:" verbose
  
 /* handle QUERY and SET commands separately */
 select
@@ -253,15 +252,17 @@ select
   otherwise
     call otherCmds                   /* search all other cmds */
 end
-if verbose = "yes" then
-  if numCmds = 0 then do
+if numCmds = 0 then do
+  if verbose = "yes" then
     say cmd arg1 "is not a command"
-    retVal = 1
-  end
-  else
+  retVal = 1
+end
+else do
+  if verbose = "yes" then
     say "found" numCmd "commands"
-    retVal = 0
-exit retVal                                /* WHICH EXEC */
+  retVal = 0
+end
+exit retVal                          /* WHICH EXEC */
  
 /*-------------------------------------------------------------------*/
 parseFlags: procedure expose flags debug helpFlag verbose doTrace
@@ -302,20 +303,20 @@ return                               /* debugMsg() */
 /*-------------------------------------------------------------------*/
 giveResult: procedure expose debug helpFlag verbose numCmds
 /* Give the answer either terse or verbose - then exit as we're done */
-/* Arg 1: Command type - CMS, CP or XEDIT                            */
+/* Arg 1: Command type - CMS, CP, XEDIT, TCPIP or REXX               */
 /* Arg 2: Scope - QUERY, SET or CMD                                  */
 /* Args 3-n: Fully qualified command - e.g. "q da" => QUERY DASD     */
 /*-------------------------------------------------------------------*/
 parse arg cmdType scope fullCmd
-call debugMsg("cmdType:" cmdType "scope:" scope,
-  "fullCmd:" fullCmd "helpFlag:" helpFlag)
+call debugMsg "cmdType:" cmdType "scope:" scope "fullCmd:" fullCmd,
+  "helpFlag:" helpFlag
 if helpFlag = "yes" then                   /* convert to HELP cmd */
   if cmdType = "XEDIT" then
     if scope = "CMD" then
       say "HELP" scope fullCmd
     else                                   /* QUERY or SET */
       say "HELP" cmdType  scope fullCmd
-  else if (scope = "CMD") then
+  else if scope = "CMD" then
     say "HELP" cmdType fullCmd
   else                                     /* prefix command type */
     say "HELP" cmdType||scope fullCmd
@@ -332,107 +333,107 @@ return                                     /* giveResult() */
 /*-------------------------------------------------------------------*/
 checkArg: procedure expose debug helpFlag verbose numCmds
 /* Check if a supplied command/arg matches next one to check         */
-/* Arg 1: Command type "CP", "CMS", or "XEDIT"                       */
+/* Arg 1: Command type CP, CMS, XEDIT, TCPIP or REXX                 */
 /* Arg 2: Scope - "QUERY", "SET" or "CMD"                            */
 /* Arg 3: User's input to check                                      */
 /* Arg 4: Command template with uppercase for required chars         */
 /*-------------------------------------------------------------------*/
 parse arg cmdType scope inputCmd tmplt
-call debugMsg("checkArg() cmdType:" cmdType "inputCmd:" inputCmd,
-"tmplt:" tmplt)
-inputLen = LENGTH(inputCmd)                /* length of input */
-tmpltLen = LENGTH(tmplt)                   /* length of next cmd/arg */
-do i = 1 to tmpltLen                       /* check each character */
-  tmpltChar = SUBSTR(tmplt, i, 1)          /* next template char */
-  inputChar = SUBSTR(inputCmd, i, 1)       /* get same input char */
-  if DATATYPE(tmpltChar, "U") then do      /* template char is upper */
-    if i > inputLen then                   /* more chars required */
-      return                               /* no match */
-    if inputChar <> tmpltChar then         /* no match */
+call debugMsg "checkArg() cmdType:" cmdType "inputCmd:" inputCmd,
+  "tmplt:" tmplt
+inputLen = LENGTH(inputCmd)          /* length of input */
+tmpltLen = LENGTH(tmplt)             /* length of next cmd/arg */
+do i = 1 to tmpltLen                 /* check each character */
+  tmpltChar = SUBSTR(tmplt, i, 1)    /* next template char */
+  inputChar = SUBSTR(inputCmd, i, 1) /* get same input char */
+  if DATATYPE(tmpltChar, "U") then do /* template char is upper */
+    if i > inputLen then             /* more chars required */
+      return
+    if inputChar <> tmpltChar then   /* no match */
       return
   end
-  else do                                  /* lower case not req'd */
-    UPPER tmpltChar                        /* fold tmpltChar to upper */
-    if i > inputLen | i > tmpltlen then    /* match */
+  else do                            /* lower case not req'd */
+    UPPER tmpltChar                  /* fold tmpltChar to upper */
+    if i > inputLen | i > tmpltlen then /* match */
       leave
     if tmpltChar = inputChar then
-      iterate                              /* possible match */
-    else                                   /* no match */
+      iterate                        /* possible match */
+    else                             /* no match */
       return
   end
 end
  
 /* if we fall through there is a match */
-call debugMsg("checkArg(): MATCH!")
-fullCmd = translate(tmplt)                 /* upper case command */
-call debugMsg("cmdType:" cmdType "fullCmd:" fullCmd)
-call giveResult(cmdType scope fullCmd)
-return
+call debugMsg "checkArg(): MATCH!"
+fullCmd = translate(tmplt)           /* upper case command */
+call debugMsg "cmdType:" cmdType "fullCmd:" fullCmd
+call giveResult cmdType scope fullCmd
+return                               /* checkArg() */
  
 /*-------------------------------------------------------------------*/
 queryCmd: procedure,
   expose cmd arg1 CMSquery CPquery Xquery debug helpFlag numCmds verbose
 /* Check if global "arg1" is a CP/CMS/XEDIT QUERY command argument   */
 /*-------------------------------------------------------------------*/
-if arg1 = "" then do                       /* no arg given */
-  say "both CP and CMS"                    /* both have QUERY cmd */
+if arg1 = "" then do                 /* no arg given */
+  say "both CP and CMS"              /* both have QUERY cmd */
   return
 end
  
 /* check CMS QUERY commands */
 do i = 1 to WORDS(CMSquery)
   nextArg = WORD(CMSquery, i)
-  call checkArg("CMS" "QUERY" arg1 nextArg)
+  call checkArg "CMS" "QUERY" arg1 nextArg
 end
  
 /* check CP QUERY commands */
 do i = 1 to WORDS(CPquery)
   nextArg = WORD(CPquery, i)
-  call checkArg("CP" "QUERY" arg1 nextArg)
+  call checkArg "CP" "QUERY" arg1 nextArg
 end
  
 /* check XEDIT QUERY commands */
 do i = 1 to WORDS(Xquery)
   nextArg = WORD(Xquery, i)
-  call checkArg("XEDIT" "QUERY" arg1 nextArg)
+  call checkArg "XEDIT" "QUERY" arg1 nextArg
 end
-return                                     /* queryCmd() */
+return                               /* queryCmd() */
  
 /*-------------------------------------------------------------------*/
 setCmd: procedure  expose cmd arg1 CMSset CPset Xset debug helpFlag,
   numCmds verbose
 /* Reply whether a SET command is CP/CMS/XEDIT                       */
 /*-------------------------------------------------------------------*/
-if arg1 = "" then do                       /* no arg given */
-  say "both CP and CMS"                    /* both have SET cmd */
+if arg1 = "" then do                 /* no arg given */
+  say "both CP and CMS"              /* both have SET cmd */
   return
 end
  
 /* check CMS SET commands */
 do i = 1 to WORDS(CMSset)
   nextArg = WORD(CMSset, i)
-  call checkArg("CMS" "SET" arg1 nextArg)
+  call checkArg "CMS" "SET" arg1 nextArg
 end
  
 /* check CP SET commands */
 do i = 1 to WORDS(CPset)
   nextArg = WORD(CPset, i)
-  call checkArg("CP" "SET" arg1 nextArg)
+  call checkArg "CP" "SET" arg1 nextArg
 end
  
 /* check XEDIT SET commands */
 do i = 1 to WORDS(Xset)
   nextArg = WORD(Xset, i)
-  call checkArg("XEDIT" "SET" arg1 nextArg)
+  call checkArg "XEDIT" "SET" arg1 nextArg
 end
-return                                     /* setCmd() */
+return                               /* setCmd() */
  
 /*-------------------------------------------------------------------*/
 otherCmds: procedure expose cmd arg1 CMScmds CPcmds TCPIPcmds Xcmds,
   REXXcmds debug helpFlag numCmds verbose
 /* Not QUERY nor SET command - check all other one word commands     */
 /*-------------------------------------------------------------------*/
-if arg1 <> "" then do                      /* only Q & SET add args */
+if arg1 <> "" then do                /* only Q & SET add args */
   say "ERROR: too many arguments"
   call help
 end
@@ -440,7 +441,7 @@ end
 /* check for EXECs first as they take priority */
 "pipe CMS LISTFILE" cmd " EXEC * | stem execs."
 if rc = 0 then do
-  say execs.1                             /* 1st EXEC in search order */
+  say execs.1                        /* 1st EXEC in search order */
 end
  
 /* check if EXECLOADed */
@@ -448,27 +449,27 @@ address command 'EXECSTAT' cmd 'EXEC'
 if rc < 8 then do
   say cmd "is EXECLOADed"
 end
-do i = 1 to WORDS(CMScmds)                 /* check if CMS command */
+do i = 1 to WORDS(CMScmds)           /* check if CMS command */
   nextArg = WORD(CMScmds, i)
-  call checkArg("CMS" "CMD" cmd nextArg)
+  call checkArg "CMS" "CMD" cmd nextArg
 end
-do i = 1 to WORDS(CPcmds)                  /* check if CP command */
+do i = 1 to WORDS(CPcmds)            /* check if CP command */
   nextArg = WORD(CPcmds, i)
-  call checkArg("CP" "CMD" cmd nextArg)
+  call checkArg "CP" "CMD" cmd nextArg
 end
-do i = 1 to WORDS(TCPIPcmds)               /* check if TCPIP command */
+do i = 1 to WORDS(TCPIPcmds)         /* check if TCPIP command */
   nextArg = WORD(TCPIPcmds, i)
-  call checkArg("TCPIP" "CMD" cmd nextArg)
+  call checkArg "TCPIP" "CMD" cmd nextArg
 end
-do i = 1 to WORDS(Xcmds)                   /* check if XEDIT command */
+do i = 1 to WORDS(Xcmds)             /* check if XEDIT command */
   nextArg = WORD(Xcmds, i)
-  call checkArg("XEDIT" "CMD" cmd nextArg)
+  call checkArg "XEDIT" "CMD" cmd nextArg
 end
-do i = 1 to WORDS(REXXcmds)                /* check if REXX command */
+do i = 1 to WORDS(REXXcmds)          /* check if REXX command */
   nextArg = WORD(REXXcmds, i)
-  call checkArg("REXX" "CMD" cmd nextArg)
+  call checkArg "REXX" "CMD" cmd nextArg
 end
-return                                     /* otherCmds() */
+return                               /* otherCmds() */
  
 /*-------------------------------------------------------------------*/
 help:

@@ -24,101 +24,83 @@ end
 parseArgs:
 /* Parse all arguments                                               */
 /*-------------------------------------------------------------------*/
-  parse upper arg fn1 ft1 fm1 fn2 ft2 fm2 extra '(' flags
-  if fn1 == "?" | fn1 == "-H" then do
-    call usage
-    exit
-  end
-  if fm2 == "" then do
-    say "ERROR: not enough arguments"
-    call usage
-    exit 2
-  end
-  if extra <> "" then do
-    say "ERROR: too many arguments"
-    call usage
-    exit 3
-  end
-  if fn2 = "=" then                  /* same file name */
-    fn2 = fn1
-  if ft2 = "=" then                  /* same file type */
-    ft2 = ft1
-  if fm2 = "=" then                  /* same file mode */
-    fm2 = fm1
-  file1 = fn1 ft1 fm1
-  file2 = fn2 ft2 fm2
-  if file1 == file2 then do
-    say "ERROR: files are identical"
-    call usage
-    exit 4
-  end
-  'ESTATE' fn1 ft1 fm1
-  if rc <> 0 then do
-    say "file 1" fn1 ft1 fm1 "does not exist"
-    exit 5
-  end
-  'ESTATE' fn2 ft2 fm2
-  if rc <> 0 then do
-    say "file 2" fn2 ft2 fm2 "does not exist"
-    exit 6
-  end
-  if flags == "V" | flags == "VERBOSE" then do
-    say "Setting verbosity to 2"
-    verbose = 2
-  end
-  else if flags == "VV" | flags == "VERYVERBOSE" then do
-    say "Setting verbosity to 3"
-    verbose = 3
-  end
-  else if flags == "S" | flags == "SILENT" then do
-    verbose = 0
-  end
-  return                             /* parseArgs() */
+parse upper arg fn1 ft1 fm1 fn2 ft2 fm2 extra '(' flags
+if fn1 == "?" | fn1 == "-H" then do
+  call help
+  exit
+end
+if fm2 == "" then do
+  say "ERROR: not enough arguments"
+  call help
+end
+if extra <> "" then do
+  say "ERROR: too many arguments"
+  call help
+end
+if fn2 = "=" then                  /* same file name */
+  fn2 = fn1
+if ft2 = "=" then                  /* same file type */
+  ft2 = ft1
+if fm2 = "=" then                  /* same file mode */
+  fm2 = fm1
+file1 = fn1 ft1 fm1
+file2 = fn2 ft2 fm2
+if file1 == file2 then do
+  say "ERROR: files are identical"
+  call help
+  exit 4
+end
+'ESTATE' fn1 ft1 fm1
+if rc <> 0 then do
+  say "file 1" fn1 ft1 fm1 "does not exist"
+  exit 5
+end
+'ESTATE' fn2 ft2 fm2
+if rc <> 0 then do
+  say "file 2" fn2 ft2 fm2 "does not exist"
+  exit 6
+end
+if flags == "V" | flags == "VERBOSE" then do
+  say "Setting verbosity to 2"
+  verbose = 2
+end
+else if flags == "S" | flags == "SILENT" then do
+  verbose = 0
+end
+return                             /* parseArgs() */
  
 /*-------------------------------------------------------------------*/
 setColor:
 /* Change color of next line                                         */
 /*-------------------------------------------------------------------*/
-  if verbose = 0 then
-    return
-  parse arg color
-  /* 'conwait'                                flush output stack */
-  'pipe cp screen outarea' color '| hole' /* no COMMAND COMPLETE */
+if verbose = 0 then
   return
+parse arg color
+/* 'conwait'                                flush output stack */
+'pipe cp screen outarea' color '| hole' /* no COMMAND COMPLETE */
+return
  
 /*-------------------------------------------------------------------*/
 RegMsg:
 /* Issue message unless in silent mode                               */
 /*-------------------------------------------------------------------*/
-  if verbose > 0 then do
-    parse arg msg
-    say msg
-  end
-  return
+if verbose > 0 then do
+  parse arg msg
+  say msg
+end
+return
  
 /*-------------------------------------------------------------------*/
 VrbosMsg:
 /* issue message in verbose mode                                     */
 /*-------------------------------------------------------------------*/
-  if verbose > 1 then do
-    parse arg msg
-    call setColor("turq")
-    say msg
-    call setColor("green")
-  end
-  return
- 
-/*-------------------------------------------------------------------*/
-VVrbosMsg:
-/* issue message in very verbose mode                                */
-/*-------------------------------------------------------------------*/
-  if verbose > 2 then do
-    parse arg msg
-    call setColor("turq")
-    say msg
-    call setColor("green")
-  end
-  return
+if verbose > 1 then do
+  parse arg msg
+  call setColor("turq")
+  say msg
+  call setColor("green")
+end
+return
  
 /*-------------------------------------------------------------------*/
 checkSameLines:
@@ -198,24 +180,15 @@ end
 return
  
 /*-------------------------------------------------------------------*/
-usage:                               /* give help                    */
+help:
+/* Give help                                                         */
 /*-------------------------------------------------------------------*/
-  say "Name : DIFF EXEC - compare two files"
-  say "Usage: diff fn1 ft1 fm1 fn2 ft2 fm2 ( flags"
-  say "Where: 'fn1 ft1 fm1' is the first file to compare"
-  say "       'fn2 ft2 fm2' is the second file to compare"
-  say "       '(flags'      havent been decided yet"
-  return                             /* usage() */
- 
-return                             /* compareFiles() */
- 
-/*-------------------------------------------------------------------*/
-usage:                               /* give help                    */
-/*-------------------------------------------------------------------*/
-  say "Name : DIFF EXEC - compare two files"
-  say "Usage: diff fn1 ft1 fm1 fn2 ft2 fm2 ( flags"
-  say "Where: 'fn1 ft1 fm1' is the first file to compare"
-  say "       'fn2 ft2 fm2' is the second file to compare"
-  say "       '(flags'      havent been decided yet"
-  return                             /* usage() */
+say "Name : DIFF EXEC - compare two files"
+say "Usage: diff fn1 ft1 fm1 fn2 ft2 fm2 [( flags )]"
+say "Where: 'fn1 ft1 fm1' is the first file to compare"
+say "       'fn2 ft2 fm2' is the second file to compare"
+say "Where: flags can be:"
+say "         S: silent - no output"
+say "         V: verbose"
+exit 2                               /* help() */
  
