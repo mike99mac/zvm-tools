@@ -1,5 +1,5 @@
 # zvm-tools
-Tools for z/VM - many inspired by useful Linux commands
+The following tools for z/VM are in this repository - many were inspired by useful Linux commands:
 
     +------------------+-------------------------------------------------+
     | File             | Description                                     |
@@ -188,9 +188,8 @@ Syntax:
 
 ### DIFF EXEC
 The ``DIFF EXEC`` compares two files and shows the results with color.
-This is still *alpha* code, especially in regards to getting the code back in sync, when one line is added to one file. 
 
-Updates will be coming.
+This is still *alpha* code, especially in regards to getting the lines back in sync.
 
 Here is the help:
 ```
@@ -207,6 +206,7 @@ Where: flags can be:
 Here is an example of using it: ... forthcoming ....
 
 <h3 id="grep-exec">GREP EXEC</h3>
+
 The ``GREP EXEC`` searches for patterns in files.
 
 To search for strings with spaces, escape the pattern with single-quotes.  For example:
@@ -284,7 +284,7 @@ grep ERR.R a a a
 this is the file A A A with a trailing ERROR                   
 Now ERROR is in the middle                                     
 ERROR in A A A at the start of a line                          
-Ready; T=0.01/0.01 15:09:44                                    
+
 grep E.*R a a a                                                
 this is the file A A A with a trailing ERROR                   
 Now ERROR is in the middle                                     
@@ -296,7 +296,7 @@ ERROR in A A A at the start of a line
 ```
 grep ^ERROR a * a                                      
 A A A1:ERROR in A A A at the start of a line           
-Ready; T=0.01/0.01 15:05:03                            
+
 grep ERROR$ a * a                                      
 A A A1:this is the file A A A with a trailing ERROR    
 ```
@@ -319,7 +319,7 @@ A A A1:this is the file A A A with a trailing ERROR
 A A A1:Now ERROR is in the middle                                
 A A A1:Another error in lower case                               
 A A A1:ERROR in A A A at the start of a line                     
-A B A1:only one ERROR in this file                               grep 'parse upper arg' * exec
+A B A1:only one ERROR in this file             
 ```
 
 - Inverse output:
@@ -331,13 +331,21 @@ A B A1:this is the file A B A
 ```
 
 ### MAN EXEC
-The ``MAN EXEC`` calls help for the requested command.  For example, ``man q da`` takes you to the ``CP QUERY DASD`` help screen.
+The ``MAN EXEC`` calls help for the requested command.  
+
 
 Here is the help:
 ```
+man -h                                                             
+Name:  MAN EXEC - give help on command, details on QUERY and SET   
+Usage: MAN command                                                 
+     | MAN Query subcmd                                            
+     | MAN SET   subcmd                                            
+Where: command can be CMS, CP, XEDIT, TCPIP or REXX                
+       subcmd  can be CMS, CP or XEDIT Query or SET subcommands    
 ```
 
-Here is an example of using it:
+For example, ``man q da`` takes you to the ``CP QUERY DASD`` help screen, and ``man substr`` takes you to the XEDIT SUBSTRING help screen.
 
 ### MKVMARC EXEC
 The ``MKVMARC EXEC`` creates the z/VM file ``ZVMTOOLS VMARC`` from all of these REXX EXECs and XEDIT macros.
@@ -350,18 +358,26 @@ The ``RFN EXEC`` renames a file only changing the file name.
 
 Here is the help:
 ```
+rfn -h                                                   
+Name:  RFN EXEC - Rename file changing only file name    
+Usage: RFN fn2 fn1 ft1 fm1                               
+Where: 'fn2' is the new file name                        
+       'fn1 ft1 fm1' is the source file                  
 ```
 
-Here is an example of using it:
+If you want to rename the file name of a file to ``RFNOLD`` in FILELIST, you would simply type ``RFN RFNOLD`` in front of the file.
 
 ### RFT.EXEC
 The `` EXEC`` renames a file only changing the file type.
 
 Here is the help:
 ```
+rft -h                                                 
+Name:  RFT EXEC - Rename file changing only file type  
+Usage: RFN ft2 fn1 ft1 fm1                             
+Where: 'ft2' is the new file type                      
+     : 'fn1 ft1 fm1' is the source file                
 ```
-
-Here is an example of using it:
 
 ### RM.EXEC
 The ``RM EXEC`` allows wild cards when erasing files.
@@ -413,13 +429,12 @@ The ``QUERY`` and ``SET`` commands allow for a second argument.  For example:
 ```
 which q disk            
 QUERY DISK is a CMS command   
-Ready;                  
+
 which q da              
 QUERY DASD is a CP command    
-Ready;                  
+
 which q scale           
 QUERY SCALE is a XEDIT command
-Ready;                  
 ``` 
 
 ### WHO.EXEC
