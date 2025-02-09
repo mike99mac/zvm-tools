@@ -209,8 +209,6 @@ Here is an example of using it: ... forthcoming ....
 
 The ``GREP EXEC`` searches for patterns in files.
 
-To search for strings with spaces, escape the pattern with single-quotes.  For example:
-
 Here is the help:
 ```
 grep -h                                                  
@@ -233,7 +231,7 @@ Special characters:
    $  - Matches end of line                              
 ```
 
-Here is an example of using it with two small files:
+Examples follow using two small files:
 
 ```
 type a a a                                                       
@@ -249,7 +247,7 @@ this is the file A B A
 only one ERROR in this file                                      
 ```
 
-- Search one file:
+- Search one file for the string ``ERROR``:
                                                                  
 ```
 grep ERROR a a a                                                 
@@ -258,7 +256,7 @@ Now ERROR is in the middle
 ERROR in A A A at the start of a line                            
 ```
 
-- Search for text with spaces: 
+- Search for text with spaces, escaping the pattern with single quotes: 
                                                                  
 ```
 grep 'ERROR in' a * a                       
@@ -291,7 +289,7 @@ Now ERROR is in the middle
 ERROR in A A A at the start of a line                          
 ```
 
-- Search for text at start and end of lines:
+- Search for text at the start and end of lines:
 
 ```
 grep ^ERROR a * a                                      
@@ -301,7 +299,7 @@ grep ERROR$ a * a
 A A A1:this is the file A A A with a trailing ERROR    
 ```
 
-- List line numbers:
+- Include line numbers in the output:
 
 ```
 grep ERROR a * a (n                                              
@@ -311,7 +309,7 @@ A A A1:4:ERROR in A A A at the start of a line
 A B A1:2:only one ERROR in this file                             
 ```
 
-- Ignore case:
+- Search ignoring case:
 
 ```
 grep ERROR a * a (i                                              
@@ -322,7 +320,7 @@ A A A1:ERROR in A A A at the start of a line
 A B A1:only one ERROR in this file             
 ```
 
-- Inverse output:
+- Inverse output - show all lines that *do not* match:
 
 ```
 grep ERROR a * a (v               
@@ -332,7 +330,6 @@ A B A1:this is the file A B A
 
 ### MAN EXEC
 The ``MAN EXEC`` calls help for the requested command.  
-
 
 Here is the help:
 ```
@@ -345,7 +342,7 @@ Where: command can be CMS, CP, XEDIT, TCPIP or REXX
        subcmd  can be CMS, CP or XEDIT Query or SET subcommands    
 ```
 
-For example, ``man q da`` takes you to the ``CP QUERY DASD`` help screen, and ``man substr`` takes you to the XEDIT SUBSTRING help screen.
+For example, ``man q da`` takes you to the ``CP QUERY DASD`` help screen, and ``man substr`` takes you to the XEDIT SUBSTR help screen.
 
 ### MKVMARC EXEC
 The ``MKVMARC EXEC`` creates the z/VM file ``ZVMTOOLS VMARC`` from all of these REXX EXECs and XEDIT macros.
@@ -384,18 +381,33 @@ The ``RM EXEC`` allows wild cards when erasing files.
 
 Here is the help:
 ```
+rm -h                                           
+Name: RM EXEC - erase one or more files         
+Usage: rm fn [ft [fm]]                          
+Where: fn, ft or fm can be '*' for all files    
 ```
-
-Here is an example of using it:
 
 ### SPC.EXEC
 The ``SPC EXEC`` closes your console and sends it to the reader with a unique timestamp. 
 
 Here is the help:
 ```
+rm -h                                           
+Name: RM EXEC - erase one or more files         
+Usage: rm fn [ft [fm]]                          
+Where: fn, ft or fm can be '*' for all files    
 ```
 
-Here is an example of using it:
+Here is an example of using it, and receiving the file from the reader:
+
+```
+spc                                                                             
+RDR FILE 0244 SENT FROM MIKEMAC  CON WAS 0244 RECS 0018 CPY  001 T NOHOLD NOKEEP
+rec 244                                                                         
+DMSRDC738I Record length is 132 bytes                                           
+CON85431 20250208 A1 created                                                    
+File CON85431 20250208 A1 received from MIKEMAC at SNAVM4 sent as CON85431 20250```
+```
 
 ### SSICMD.EXEC
 The ``SSICMD EXEC`` runs a CP command on all members of a z/VM SSI cluster. 
@@ -411,20 +423,30 @@ The ``WC EXEC`` counts lines, words and bytes in one or more files.
 
 Here is the help:
 ```
+ssicmd ?                                                      
+Name: SSICMD EXEC - Issue a CP command on all SSI members     
+Usage: SSICMD <CPcmd>                                         
 ```
-
-Here is an example of using it:
 
 ### WHICH.EXEC
 The ``WHICH EXEC`` resolves and fully qualifies CMS, CP and XEDIT commands.
 
 Here is the help:
 ```
+which -h                                                                  
+Name:  WHICH EXEC - list type of command, details on QUERY and SET        
+Usage: WHICH command [(FLAGS)]                                            
+     | WHICH Query subcommand ['('FLAGS')']                               
+     | WHICH SET   subcommand ['('FLAGS')']                               
+Where: FLAGS can be:                                                      
+             D: debug                                                     
+             H: create help command                                       
+             S: silent - negative verbosity                               
+             T: trace                                                     
+             V: verbose - return expanded command                         
 ```
 
-Here is an example of using it:
-
-The ``QUERY`` and ``SET`` commands allow for a second argument.  For example: 
+Here are some examples of using it. The ``QUERY`` and ``SET`` commands allow for a second argument.  
 
 ```
 which q disk            
@@ -466,12 +488,12 @@ The ``PROFFLST XEDIT`` macro sets PF10 to *Sort by name* to the ``FILELIST`` com
 If that could be added to the z/VM system globally, this would not be needed. 
 
 ### PROFILE.XEDIT     
-The ``PROFILE XEDIT`` macro is a slightly modified copy of the one on the ``MAINT 191`` disk. 
+The ``PROFILE XEDIT`` macro is a slightly modified copy of the one on the ``MAINT 191`` disk. It's the *REAL THING*. 
 
 ## VMARC file 
 There is a compressed file of all the EXECs and XEDIT macros in the file ``ZVMTOOLS.VMARC``.
 
-Unfortunately the ``VMARC`` tool to decompress it does not ship with z/VM. If you don't have already, it has to be installed:
+The ``VMARC`` tool to decompress it does not ship with z/VM. If you don't have already, it has to be installed:
 
 - Download the VMARC MODULE from: ``https://www.vm.ibm.com/download/vmarc.module``
 - Upload the file to CMS in BINARY (usually ``ftp``, then ``bin``, then ``put vmarc.module``)
