@@ -1,9 +1,9 @@
 # zvm-tools
 These are tools for z/VM, many based on Linux commands.
 
-Some emulate commonly used Linux commands such as ``diff``, ``grep``, ``man``, ``rm``, ``wc`` and ``who``. Others are more specific to z/VM such as ``calcdasd``, ``copydisk``, ``cpformat`` and ``ssicmd``. 
+Some emulate commonly used Linux commands such as ``diff``, ``grep``, ``man``, ``rm``, ``wc`` and ``who``. Others are more specific to z/VM such as ``calcdasd``, ``copydisk``, ``cpformat`` and ``ssicmd``.  Most are REXX EXECs, some are XEDIT macros and there is one VMARC file containing all other files.
 
-The following tools for z/VM are in this repository - many were inspired by useful Linux commands:
+The following tools for z/VM are in this repository: 
 
     +------------------+-------------------------------------------------+
     | File             | Description                                     |
@@ -35,6 +35,43 @@ The following tools for z/VM are in this repository - many were inspired by usef
     |                  |                                                 |
     | ZVMTOOLS VMARC   | Collection of all the above tools               |
     +------------------+-------------------------------------------------+
+## Installation
+You can install to z/VM or by using Linux as an intermediate step.
+
+### Installation on z/VM
+To install on z/VM, perform the following steps:
+
+If you do not have the ``VMARC MODULE``:
+- Download it from: ``https://www.vm.ibm.com/download/vmarc.module``
+- Upload the file to CMS in BINARY (usually ``ftp``, then ``bin``, then ``put vmarc.module``)
+- Run it through this pipeline:
+
+```
+PIPE < VMARC MODULE A | deblock cms | > VMARC MODULE A
+```
+
+Then:
+- Download ``ZVMTOOLS.VMARC`` to your workstation.
+- Get it to z/VM in binary, either with FTP (using ``bin``, ``quote site fix 80``, then ``put ZVMTOOLS.VMARC``), or using another tool such as ``IND$FILE``.
+- Unpack it: 
+
+```
+vmarc unpk zvmtools.vmarc
+```
+All the files should now be accessible.
+
+## Installation through Linux
+To install the tools using Linux, perform the following steps:
+
+- Clone it from github:
+
+```
+$ git clone https://github.com/mike99mac/zvm-tools
+```
+
+- Change to the new directory and copy the tools to z/VM with ``ftp`` or ``IND$FILE``.
+ 
+
 ## REXX EXECs
 Following are descriptions of each REXX EXEC.
 
@@ -335,7 +372,7 @@ Where: command can be CMS, CP, XEDIT, TCPIP or REXX
        subcmd  can be CMS, CP or XEDIT Query or SET subcommands    
 ```
 
-For example, ``man q da`` takes you to the ``CP QUERY DASD`` help screen, and ``man substr`` takes you to the XEDIT SUBSTR help screen.
+For example, ``man q da`` takes you to the ``CP QUERY DASD`` help screen, and ``man substr`` takes you to the ``XEDIT SUBSTR`` help screen.
 
 ### MKVMARC EXEC
 The ``MKVMARC EXEC`` creates the z/VM file ``ZVMTOOLS VMARC`` from all of these REXX EXECs and XEDIT macros.
@@ -384,6 +421,7 @@ Where: fn, ft or fm can be '*' for all files
 The ``SPC EXEC`` closes your console and sends it to the reader with a unique timestamp. 
 
 Here is the help:
+
 ```
 rm -h                                           
 Name: RM EXEC - erase one or more files         
@@ -399,7 +437,7 @@ RDR FILE 0244 SENT FROM MIKEMAC  CON WAS 0244 RECS 0018 CPY  001 T NOHOLD NOKEEP
 rec 244                                                                         
 DMSRDC738I Record length is 132 bytes                                           
 CON85431 20250208 A1 created                                                    
-File CON85431 20250208 A1 received from MIKEMAC at SNAVM4 sent as CON85431 20250```
+File CON85431 20250208 A1 received from MIKEMAC at SNAVM4 
 ```
 
 ### SSICMD.EXEC
@@ -407,9 +445,11 @@ The ``SSICMD EXEC`` runs a CP command on all members of a z/VM SSI cluster.
 
 Here is the help:
 ```
+ssicmd -h                                                 
+Name: SSICMD EXEC - Issue a CP command on all SSI members 
+Usage: SSICMD <CPcmd>                                     
 ```
 
-Here is an example of using it:
 
 ### WC.EXEC
 The ``WC EXEC`` counts lines, words and bytes in one or more files. 
@@ -453,9 +493,9 @@ QUERY SCALE is a XEDIT command
 ``` 
 
 ### WHO.EXEC
-The ``WHO EXEC`` takes the output of ``QUERY NAMES``, sorts it and shows it one virtual machine per line.
+The ``WHO EXEC`` takes the output of ``QUERY NAMES``, sorts it and shows it one virtual machine per line.  It also allows for a search pattern. 
 
-It also allows for a search pattern. For example: 
+Here is an example of using it:
 
 ```
 who SSL          
@@ -478,7 +518,7 @@ Is it just me, or does the stock ``FILELIST`` command *not* have an option to so
 
 The ``PROFFLST XEDIT`` macro sets PF10 to *Sort by name* to the ``FILELIST`` command.
 
-If that could be added to the z/VM system globally, this would not be needed. 
+If that could be added to z/VM, this would not be needed. 
 
 ### PROFILE.XEDIT     
 The ``PROFILE XEDIT`` macro is a slightly modified copy of the one on the ``MAINT 191`` disk. It's the *REAL THING*. 
@@ -486,15 +526,8 @@ The ``PROFILE XEDIT`` macro is a slightly modified copy of the one on the ``MAIN
 ## VMARC file 
 There is a compressed file of all the EXECs and XEDIT macros in the file ``ZVMTOOLS.VMARC``.
 
-The ``VMARC`` tool to decompress it does not ship with z/VM. If you don't have already, it has to be installed:
+The ``VMARC`` tool to decompress it does not ship with z/VM. If you don't have it already, it has to be installed:
 
-- Download the VMARC MODULE from: ``https://www.vm.ibm.com/download/vmarc.module``
-- Upload the file to CMS in BINARY (usually ``ftp``, then ``bin``, then ``put vmarc.module``)
-- Run it through this pipeline:
-
-```
-PIPE < VMARC MODULE A | deblock cms | > VMARC MODULE A
-```
 
 ### TO DO
 #### Possible new EXECs:
