@@ -1,6 +1,6 @@
 /*--------------------------------------------------------------------*/
 /* Name:  GREP EXEC - search files for text patterns                  */
-/* Usage: grep ptrn FN [FT [FM]]                                      */
+/* Usage: grep [lxFlags] ptrn FN [FT [FM]] [(vmFlags)]                */
 /* Source: https://github.com/mike99mac/zvm-tools                     */
 /*   .  - Matches any single character                                */
 /*   *  - Matches zero or more of the preceding character             */
@@ -8,11 +8,53 @@
 /*   $  - Matches end of line                                         */
 /*   [] - Matches Character class - NOT IMPLEMENTED YET!!!            */
 /*--------------------------------------------------------------------*/
-parse arg "'" ptrn "'" fn ft fm rest '(' flags ')'
-if fn = "" then                      /* no single quotes */
-  parse arg ptrn fn ft fm rest '(' flags ')'
-if (ptrn = '' | ptrn = '?' | ptrn = "-h") then
-  call help
+ 
+/* first parse for quoted pattern, if not found => single word pattern */
+parse arg lxFlags "'" ptrn "'" fn ft fm rest '(' flags ')'
+if (lxFlags = '' | lxFlags = '?' | lxFlags = "-h") then
+  call help                          /* never returns */
+if ptrn = "" then do                 /* no single quotes */
+  call debugMsg "no single quotes found in pattern"
+  lxFlags = ""                       /* Linux style flags */
+  parse arg args
+  numArgs = WORDS(args)
+  if SUBSTR(args, 1, 1) <> "-" then do  /* no Linux style flags */
+    parse arg args ptrn fn ft fm rest '(' flags ')'
+    i = 1
+  end
+  else do i = 1 to numArgs
+    nextArg = WORD(args, i)
+    if SUBSTR(nextArg, 1, 1) = "-" then do
+      if lxFlags = "" then do        /* initialize */
+        lxFlags = nextArg
+      end
+      else do                        /* append to */
+        lxFlags = lxFlags nextArg
+      end
+    end
+    else do
+      leave
+    end
+  end
+  if numArgs < i+2 then do
+    say "ERROR: not enough args"
+    call help
+  end
+  ptrn = WORD(args, i)
+  fn = WORD(args, i+1)
+  ft = WORD(args, i+2)
+  if numArgs < i+3 then
+    fm = "A"
+  else
+    fm = WORD(args, i+3)
+  if SUBSTR(lxFlags, 1, 1) <> '-' then do /* no linux flags */
+    fm = ft
+    ft = fn
+    fn = ptrn
+    ptrn = lxFlags                   /* shift one */
+    lxFlags = ""
+  end
+end
 if rest <> "" then
   echo "WARNING: ignoring extra argument:" rest
 if ft = "" then do
@@ -29,7 +71,8 @@ debug = "no"
 doTrace = "no"
 inverse = "no"
 numbers = "no"                       /* show line numbers */
-call parseFlags
+call parseFlags                      /* parse (vmFlags */
+call parseLxFlags                    /* parse -LinuxFlags */
 if doTrace = "yes" then              /* turn trace on */
   trace i
 call debugMsg "chkCase:" chkCase
@@ -41,15 +84,15 @@ upper fn ft fm                       /* upper case file spec */
  
 /* get files to search */
 'PIPE COMMAND LISTFILE' fn ft fm '| STEM files.'
-if (files.0 = 0) then do
-  say "No files found matching" fn ft fm
-  exit 2
+retVal = rc
+if retVal <> 0 then do               /* error */
+  if files.0 <> 0 then               /* there is an error message */
+    say "ERROR:" files.1
+  exit retVal
 end
 numFiles = files.0
 retVal = 1                           /* assume no match */
- 
-/* loop through files */
-do i = 1 to numFiles
+do i = 1 to numFiles                 /* loop through files */
   parse var files.i nextFN nextFT nextFM . /* remove spaces */
   'PIPE COMMAND TYPE' files.i '| STEM lines.'
   numLines = lines.0 - 2             /* 1st & last lines are blank */
@@ -86,6 +129,42 @@ if numbers = "yes" then              /* include line number */
 else                                 /* no line number */
   say fileSpec||theLine
 return                               /* prtLn() */
+ 
+/*-------------------------------------------------------------------*/
+parseLxFlags: procedure expose chkCase debug doTrace lxFlags inverse,
+  numbers
+/* parse Linux style flags passed in, if any                         */
+/*-------------------------------------------------------------------*/
+upper lxFlags                        /* fold to upper case */
+do i = 1 to WORDS(lxFlags)
+  nextFlag = WORD(lxFlags, i)
+  if SUBSTR(nextFlag, 1, 1) <> "-" then do
+    say "ERROR: unexpected arg:" nextFlag
+    call help
+  end
+  do j = 2 to LENGTH(nextFlag)
+    nextCh = SUBSTR(nextFlag, j, 1)
+    select
+      when nextCh = "D" then
+        debug = "yes"
+      when nextCh = "H" then
+        call help
+      when nextCh = "I" then         /* ignore case */
+        chkCase = "no"
+      when nextCh = "N" then         /* show line numbers */
+        numbers = "yes"
+      when nextCh = "T" then         /* turn trace on */
+        doTrace = "yes"
+      when nextCh = "V" then
+        inverse = "yes"
+      otherwise do
+        say "ERROR: unrecognized flag:" nextCh
+        exit 8                         /* branch 2 halfwords */
+      end
+    end
+  end
+end
+return                               /* parseLxFlags() */
  
 /*-------------------------------------------------------------------*/
 parseFlags: procedure expose chkCase debug doTrace flags inverse numbers
@@ -208,23 +287,22 @@ help:
 /* Give help                                                          */
 /*--------------------------------------------------------------------*/
 say "Name:  GREP EXEC - search files for text patterns"
-say "Usage: GREP 'pattern' fn ft [fm] [(flags)]"
+say "Usage: GREP [lnx-flags] 'pattern' fn ft [fm] [(flags)]"
 say "Where: pattern is a single quote delimited search string"
 say "       fn ft is the file name and type to search"
 say "       fm is the file mode (default A)"
-say "Where: flags can be:"
-say "         D: show debug messages"
-say "         I: ignore case"
-say "         N: show line numbers"
-say "         T: turn trace on"
-say "         V: inverse - show non-matches"
+say "Where: flags or lnx-flags can be:"
+say "         d: show debug messages"
+say "         i: ignore case"
+say "         n: show line numbers"
+say "         t: turn trace on"
+say "         v: inverse - show non-matches"
+say "Note : lnx-flags must be preceded with '-'"
 say ""
 say "Special characters:"
 say "   .  - Matches one character"
 say "   .* - Matches one or more characters"
 say "   µ  - Matches start of line"
 say "   $  - Matches end of line"
-/* say "   [] - Matches any single character in set" */
-/* say "   \  - Escape character for special characters" */
 exit 2
  
