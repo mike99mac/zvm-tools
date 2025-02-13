@@ -4,12 +4,11 @@
 /* Source: https://github.com/mike99mac/zvm-tools                     */
 /*   .  - Matches any single character                                */
 /*   *  - Matches zero or more of the preceding character             */
-/*   µ  - Matches start of line                                       */
+/*   .* - Matches start of line                                       */
 /*   $  - Matches end of line                                         */
-/*   [] - Matches Character class - NOT IMPLEMENTED YET!!!            */
 /*--------------------------------------------------------------------*/
  
-/* first parse for quoted pattern, if not found => single word pattern */
+/* parse for quoted pattern, if not found => single word pattern */
 parse arg lxFlags "'" ptrn "'" fn ft fm rest '(' flags ')'
 if (lxFlags = '' | lxFlags = '?' | lxFlags = "-h") then
   call help                          /* never returns */
@@ -64,12 +63,12 @@ end
 if fm = "" then                      /* default file mode is A */
   fm = "A"
  
-/* set and parse flags */
+/* set and parse z/VM flags */
 upper flags                          /* flags to upper case */
 chkCase = "yes"                      /* case must match */
 debug = "no"
 doTrace = "no"
-inverse = "no"
+inverse = "no"                       /* show inverse output */
 numbers = "no"                       /* show line numbers */
 call parseFlags                      /* parse (vmFlags */
 call parseLxFlags                    /* parse -LinuxFlags */
@@ -249,7 +248,7 @@ do while i <= ptrnLen & j <= lineLen
   lineCh = SUBSTR(line, j, 1)        /* next char in line */
   call debugMsg "i:" i "j:" j "ptrnCh:" ptrnCh "lineCh:" lineCh
   if ptrnCh = "." then do           /* '.' matches any character */
-    if SUBSTR(ptrn, i + 1, 1) <> "*" then do /* . matches all chars */
+    if SUBSTR(ptrn, i + 1, 1) <> "*" then do /* no '.*' */
       i = i + 1
       j = j + 1
       iterate
@@ -272,7 +271,7 @@ do while i <= ptrnLen & j <= lineLen
     j = j + 1
   end
   else do
-    i = 1                            /* back start of pattern */
+    i = 1                            /* back to start of pattern */
     j = j + 1                        /* check next line char */
   end
 end
@@ -284,7 +283,7 @@ else                                 /* match */
  
 /*--------------------------------------------------------------------*/
 help:
-/* Give help                                                          */
+/* Give help then exit                                                */
 /*--------------------------------------------------------------------*/
 say "Name:  GREP EXEC - search files for text patterns"
 say "Usage: GREP [lnx-flags] 'pattern' fn ft [fm] [(flags)]"

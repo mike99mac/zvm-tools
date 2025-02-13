@@ -20,9 +20,10 @@ args = arg1
 if arg2 <> "" then
   args = arg1 arg2
 'PIPE CMS WHICH' args '(H) | VAR helpCmd'
-if rc <> 0 then do
-  say "PIPE returned" rc
-  exit 2
+retVal = rc
+if retVal <> 0 then do
+  say "Cannot find help for" args
+  exit retVal
 end
 address cms helpCmd
 exit                                 /* MAN EXEC */
