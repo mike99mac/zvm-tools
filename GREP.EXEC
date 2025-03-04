@@ -7,21 +7,19 @@
 /*   .* - Matches start of line                                       */
 /*   $  - Matches end of line                                         */
 /*--------------------------------------------------------------------*/
- 
 /* parse for quoted pattern, if not found => single word pattern */
+parse arg args
+numArgs = WORDS(args)
 parse arg lxFlags "'" ptrn "'" fn ft fm rest '(' flags ')'
 if (lxFlags = '' | lxFlags = '?' | lxFlags = "-h") then
   call help                          /* never returns */
 if ptrn = "" then do                 /* no single quotes */
-  call debugMsg "no single quotes found in pattern"
   lxFlags = ""                       /* Linux style flags */
-  parse arg args
-  numArgs = WORDS(args)
-  if SUBSTR(args, 1, 1) <> "-" then do  /* no Linux style flags */
-    parse arg args ptrn fn ft fm rest '(' flags ')'
-    i = 1
-  end
-  else do i = 1 to numArgs
+  parse arg ptrn fn ft fm rest '(' flags ')'
+  if fm = "" then
+    fm = "A"
+  i = 1                              /* start with first arg */
+  do i = 1 to numArgs
     nextArg = WORD(args, i)
     if SUBSTR(nextArg, 1, 1) = "-" then do
       if lxFlags = "" then do        /* initialize */
@@ -31,33 +29,20 @@ if ptrn = "" then do                 /* no single quotes */
         lxFlags = lxFlags nextArg
       end
     end
-    else do
-      leave
-    end
-  end
-  if numArgs < i+2 then do
-    say "ERROR: not enough args"
-    call help
+    else leave                       /* no more Linux flags */
   end
   ptrn = WORD(args, i)
   fn = WORD(args, i+1)
   ft = WORD(args, i+2)
-  if numArgs < i+3 then
+  if numArgs < i+3 | SUBSTR(WORD(args, i+3), 1, 1) = "(" then
     fm = "A"
   else
     fm = WORD(args, i+3)
-  if SUBSTR(lxFlags, 1, 1) <> '-' then do /* no linux flags */
-    fm = ft
-    ft = fn
-    fn = ptrn
-    ptrn = lxFlags                   /* shift one */
-    lxFlags = ""
-  end
 end
 if rest <> "" then
-  echo "WARNING: ignoring extra argument:" rest
+  say "WARNING: ignoring extra argument:" rest
 if ft = "" then do
-  echo "ERROR: missing FT"
+  say "ERROR: missing FT"
   call help
 end
 if fm = "" then                      /* default file mode is A */
@@ -95,7 +80,7 @@ do i = 1 to numFiles                 /* loop through files */
   parse var files.i nextFN nextFT nextFM . /* remove spaces */
   'PIPE COMMAND TYPE' files.i '| STEM lines.'
   numLines = lines.0 - 2             /* 1st & last lines are blank */
-  call debugMsg "file:" nextFN nextFT nextFM "has" numLinex "lines"
+  call debugMsg "file:" nextFN nextFT nextFM "has" numLines "lines"
   do j = 2 to lines.0 - 1            /* first line is blank */
     call debugMsg "line" j":" lines.j
     if regex(lines.j) then do        /* match */
@@ -286,10 +271,10 @@ help:
 /* Give help then exit                                                */
 /*--------------------------------------------------------------------*/
 say "Name:  GREP EXEC - search files for text patterns"
-say "Usage: GREP [lnx-flags] 'pattern' fn ft [fm] [(flags)]"
+say "Usage: GREP [lnx-flags] 'pattern' FN FT [FM] [(flags)]"
 say "Where: pattern is a single quote delimited search string"
-say "       fn ft is the file name and type to search"
-say "       fm is the file mode (default A)"
+say "       FN FT is the file name and type to search"
+say "       FM is the file mode (default A)"
 say "Where: flags or lnx-flags can be:"
 say "         d: show debug messages"
 say "         i: ignore case"
