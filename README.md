@@ -30,11 +30,11 @@ The following tools for z/VM are in this repository:
     | WC       EXEC    | Count lines, words and bytes in files           |
     | WHICH    EXEC    | Resolve CMS/CP/XEDIT commands                   |
     | WHO      EXEC    | Show who is logged on and allow a pattern       |
-    |                  |                                                 |
+    | --------------   | ----------------------------------------------- |
     | BF       XEDIT   | Move to the last page in XEDIT                  |
     | PROFFLST XEDIT   | Sets F10 to "Sort by Name" which is missing     |
     | PROFILE  XEDIT   | "This is the real thing" adapted from MAINT     |
-    |                  |                                                 |
+    | --------------   | ----------------------------------------------- |
     | ZVMTOOLS VMARC   | Collection of all the above tools               |
     +------------------+-------------------------------------------------+
 ## Installation

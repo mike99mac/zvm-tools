@@ -1,19 +1,27 @@
 /*-------------------------------------------------------------------*/
-/* HEAD EXEC - output the first part of files                        */
-/* Syntax: HEAD [-n] fn ft [fm]                                      */
+/* HEAD EXEC - output the head or tail of file(s)                    */
+/* Syntax: HEAD [-n] fn ft [fm] [(TAIL}]                             */
 /* Source: https://github.com/mike99mac/zvm-tools                    */
 /*-------------------------------------------------------------------*/
 numLines = 10                        /* default number of lines */
+cmd = "head"                         /* can also be "tail" */
 parse upper arg args                 /* get args in upper case */
 call parseArgs args                  /* parse arguments */
-call fileHead                        /* produce output */
+call headsTails                      /* output head or tail */
 exit                                 /* all done */
  
 /*-------------------------------------------------------------------*/
-parseArgs: procedure expose fn ft fm numLines
+parseArgs: procedure expose cmd fn ft fm numLines
 /* Parse arguments                                                   */
 /*-------------------------------------------------------------------*/
-parse arg arg1 arg2 arg3 arg4
+parse arg arg1 arg2 arg3 arg4 '(' VMarg ')'
+if VMarg <> "" then                  /* (arg passed */
+  if VMarg = "TAIL" then
+    cmd = "tail"
+  else do
+    say "ERROR: unrecognized argument:" VMarg
+    call help
+  end
 if arg1 = "?" | arg1 = "-H" | arg1 = "" then
   call help
 if arg 2 = "" then do
@@ -48,23 +56,39 @@ end
 return                               /* parseArgs() */
  
 /*-------------------------------------------------------------------*/
-fileHead: procedure expose fn ft fm numLines
-/* Show the head of file(s)                                          */
+headsTails: procedure expose cmd fn ft fm numLines
+/* Show either head or tail of file(s)                               */
 /*-------------------------------------------------------------------*/
-say "LISTFILE" fn ft fm
-'PIPE COMMAND LISTFILE' fn ft fm '| STEM files.'
+'EXECIO * DISKR' fn ft fm '(STEM' lines. 'FINIS'
+if rc <> 0 then do
+  say "ERROR EXECIO DISKR returned" rc
+  call help
+end
+'PIPE COMMAND LISTFILE' fn ft fm '| STEM files.' /* get matching files */
 if files.0 = 0 then do               /* file not found */
   say "File not found"
   exit rc                            /* rc LISTFILE uses */
 end
-else if files.0 = 1 then             /* do not print file name */
-  "TYPE" files.1 1 numLines          /* show the lines */
-else do i = 1 to files.0             /* for all files */
-  say "==>" files.i "<=="            /* show file name */
-  "TYPE" files.i 1 numLines          /* show the lines */
-  say                                /* leave some room */
+if cmd = "tail" then do              /* show bottom of file */
+  startLine = lines.0 - numLines
+  if files.0 = 1 then                /* do not print file name */
+    "TYPE" files.1 startLine         /* show last lines */
+  else do i = 1 to files.0           /* for all files */
+    say "==>" files.i "<=="          /* show file name */
+    "TYPE" files.i startLine         /* show last lines */
+    say
+  end
 end
-exit                                 /* fileHead() */
+else do                              /* show top of file */
+  if files.0 = 1 then                /* do not print file name */
+    "TYPE" files.1 1 numLines        /* show first lines */
+  else do i = 1 to files.0           /* for all files */
+    say "==>" files.i "<=="          /* show file name */
+    "TYPE" files.i 1 numLines        /* show first lines */
+    say                              /* leave some room */
+  end
+end
+return                               /* headsTails() */
  
 /*-------------------------------------------------------------------*/
 help:
