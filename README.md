@@ -17,6 +17,7 @@ The following tools for z/VM are in this repository:
     | CPFORMAT EXEC    | Format one or more DASD and label               |
     | DIFF     EXEC    | Compare files line by line                      |
     | GREP     EXEC    | Search for patterns in files                    |
+    | HEAD     EXEC    | Output the first part of files                  |
     | MAN      EXEC    | Give help on CMS/CP/XEDIT commands              |
     | MKVMARC  EXEC    | Make a VMARC file of these EXECs/XEDIT macros   |
     | QA       EXEC    | Run QUERY ACCESSED                              |
@@ -25,6 +26,7 @@ The following tools for z/VM are in this repository:
     | RM       EXEC    | Remove files allowing wildcards                 |
     | SPC      EXEC    | Spool console to reader then restart            |
     | SSICMD   EXEC    | Run CP commands on multiple SSI members         |
+    | TAIL     EXEC    | Output the last part of files                   |
     | WC       EXEC    | Count lines, words and bytes in files           |
     | WHICH    EXEC    | Resolve CMS/CP/XEDIT commands                   |
     | WHO      EXEC    | Show who is logged on and allow a pattern       |
@@ -236,29 +238,29 @@ Where: flags can be:
 Here is an example of using it: ... forthcoming ....
 
 <h3 id="grep-exec">GREP EXEC</h3>
-
 The ``GREP EXEC`` searches for patterns in files.
 
 Here is the help:
 ```
 grep -h                                                  
-Name:  GREP EXEC - search files for text patterns        
-Usage: GREP 'pattern' fn ft [fm] [(flags)]               
-WHERE: pattern is a single quote delimited search string 
-       fn ft is the file name and type to search         
-       fm is the file mode (default A)                   
-Where: flags can be:                                     
-         D: show debug messages                          
-         I: ignore case                                  
-         N: show line numbers                            
-         T: turn trace on                                
-         V: inverse - show non-matches                   
-                                                         
-Special characters:                                      
-   .  - Matches one character                            
-   .* - Matches one or more characters                   
-   ^  - Matches start of line                            
-   $  - Matches end of line                              
+Name:  GREP EXEC - search files for text patterns         
+Usage: GREP [lnx-flags] 'pattern' FN FT [FM] [(flags)]    
+Where: pattern is a single quote delimited search string  
+       FN FT is the file name and type to search          
+       FM is the file mode (default A)                    
+Where: zvm (FLAGS or Linux -flags can be one or more of:  
+         d: show debug messages                           
+         i: ignore case                                   
+         n: show line numbers                             
+         t: turn trace on                                 
+         v: inverse - show non-matches                    
+Note : lnx-flags must be preceded with '-'                
+                                                          
+Special characters:                                       
+   .  - Matches one character                             
+   .* - Matches one or more characters                    
+   ^  - Matches start of line                             
+   $  - Matches end of line                               
 ```
 
 Examples follow using two small files:
@@ -358,6 +360,20 @@ A A A1:Another error in lower case
 A B A1:this is the file A B A     
 ```
 
+<h3 id="head-exec">HEAD EXEC</h3>
+
+The ``HEAD EXEC`` output the first part of files.
+
+Here is the help:
+```
+head -h                                                  
+Name:  HEAD EXEC - output the first part of files
+Usage: HEAD [-<n>] fn ft [fm]                      
+Where: 'fn ft' is the file name and type         
+     : 'fm' is the file mode (default A)         
+     : -<n> is number of lines to show (default 10) 
+```
+
 ### MAN EXEC
 The ``MAN EXEC`` calls help for the requested command.  
 
@@ -450,6 +466,19 @@ Name: SSICMD EXEC - Issue a CP command on all SSI members
 Usage: SSICMD <CPcmd>                                     
 ```
 
+<h3 id="tail-exec">TAIL EXEC</h3>
+
+The ``TAIL EXEC`` output the last part of files.
+
+Here is the help:
+```
+tail -h                                                  
+Name:  TAIL EXEC - output the last part of files
+Usage: TAIL [-<n>] fn ft [fm]                      
+Where: 'fn ft' is the file name and type         
+     : 'fm' is the file mode (default A)         
+     : -<n> is number of lines to show (default 10) 
+```
 
 ### WC.EXEC
 The ``WC EXEC`` counts lines, words and bytes in one or more files. 
