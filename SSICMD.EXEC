@@ -21,7 +21,7 @@ end
  
 /* If nonzero return code, show error message and exit */
 if rc <> 0 | ssi.0 = 0 Then do
-  say "Error: QUERY SSI return code =" rc
+/*say "Error: QUERY SSI return code =" rc*/
   say msg.1
 end
 else do                         /* send command to each SSI member */

@@ -25,7 +25,10 @@ if retVal <> 0 then do
   say "Cannot find help for" args
   exit retVal
 end
-address cms helpCmd
+if POS("is an EXEC", helpCmd) <> 0 then /* this is an EXEC */
+  say helpCmd "=>" SUBWORD(helpCmd, 1, 1) "?"
+else                                 /* run help command */
+  address cms helpCmd
 exit                                 /* MAN EXEC */
  
 /*-------------------------------------------------------------------*/

@@ -441,14 +441,17 @@ end
 /* check for EXECs first as they take priority */
 "pipe CMS LISTFILE" cmd " EXEC * | stem execs."
 if rc = 0 then do
-  say execs.1                        /* 1st EXEC in search order */
+  say execs.1 "is an EXEC"           /* 1st EXEC in search order */
+  numCmds = numCmds + 1              /* there is an EXEC */
 end
  
 /* check if EXECLOADed */
+/* SKIP FOR NOW
 address command 'EXECSTAT' cmd 'EXEC'
 if rc < 8 then do
   say cmd "is EXECLOADed"
 end
+*/
 do i = 1 to WORDS(CMScmds)           /* check if CMS command */
   nextArg = WORD(CMScmds, i)
   call checkArg "CMS" "CMD" cmd nextArg
