@@ -1,28 +1,15 @@
 /*-------------------------------------------------------------------*/
-/* Name  : DIFF EXEC - compare two files                             */
-/* Usage : DIFF fn1 ft1 fm1 fn2 ft2 fm2 (flags                       */
-/* Return: 0 - files are identical                                   */
-/*       : 1 - files are different                                   */
-/*       : 2+- comparison did not complete                           */
-/* Source: https://github.com/mike99mac/zvm-tools                    */
+/* DIFF EXEC - Compare two files line by line                        */
 /*-------------------------------------------------------------------*/
 diffs = 0
-verbose = 1
-parse arg args                             /* get all arguments */
-call parseArgs args                        /* parse all arguments */
-call compareFiles                          /* do the work */
-if diffs == 0 then do                      /* no differences */
-  call regMsg "Files are identical"
-  exit
-end
-else do
-  call regMsg "Files differ"
-  exit 1
-end
+parse arg args
+call parseArgs args                  /* parse arguments */
+call compareFiles                    /* compare files */
+exit diffs                           /* Return non-0 if files differ */
  
 /*-------------------------------------------------------------------*/
-parseArgs:
-/* Parse all arguments                                               */
+parseArgs: procedure expose fn1 ft1 fm1 fn2 ft2 fm2 flags
+/* Parse input arguments                                             */
 /*-------------------------------------------------------------------*/
   parse upper arg fn1 ft1 fm1 fn2 ft2 fm2 extra '(' flags
   if fn1 == "?" | fn1 == "-H" then do
@@ -30,56 +17,41 @@ parseArgs:
     exit
   end
   if fm2 == "" then do
-    say "ERROR: not enough arguments"
+    say "ERROR: Not enough arguments"
     call usage
     exit 2
   end
   if extra <> "" then do
-    say "ERROR: too many arguments"
+    say "ERROR: Too many arguments"
     call usage
     exit 3
   end
-  if fn2 = "=" then                  /* same file name */
-    fn2 = fn1
-  if ft2 = "=" then                  /* same file type */
-    ft2 = ft1
-  if fm2 = "=" then                  /* same file mode */
-    fm2 = fm1
+  if fn2 = "=" then fn2 = fn1          /* Allow '=' shorthand */
+  if ft2 = "=" then ft2 = ft1
+  if fm2 = "=" then fm2 = fm1
   file1 = fn1 ft1 fm1
   file2 = fn2 ft2 fm2
   if file1 == file2 then do
-    say "ERROR: files are identical"
-    call usage
+    say "ERROR: Files are identical"
     exit 4
   end
-  'ESTATE' fn1 ft1 fm1
+  'estate' file1
   if rc <> 0 then do
-    say "file 1" fn1 ft1 fm1 "does not exist"
+    say "File 1" file1 "does not exist"
     exit 5
   end
-  'ESTATE' fn2 ft2 fm2
+  'estate' file2
   if rc <> 0 then do
-    say "file 2" fn2 ft2 fm2 "does not exist"
+    say "File 2" file2 "does not exist"
     exit 6
   end
-  if flags == "V" | flags == "VERBOSE" then do
-    say "Setting verbosity to 2"
-    verbose = 2
-  end
-  else if flags == "VV" | flags == "VERYVERBOSE" then do
-    say "Setting verbosity to 3"
-    verbose = 3
-  end
-  else if flags == "S" | flags == "SILENT" then do
-    verbose = 0
-  end
-  return                             /* parseArgs() */
+return                               /* DIFF EXEC */
  
 /*-------------------------------------------------------------------*/
 setColor:
 /* Change color of next line                                         */
 /*-------------------------------------------------------------------*/
-  if verbose = 0 then
+  if verbose = 0 then                /* no output */
     return
   parse arg color
   /* 'conwait'                                flush output stack */
@@ -87,169 +59,109 @@ setColor:
   return
  
 /*-------------------------------------------------------------------*/
-RegMsg:
-/* Issue message unless in silent mode                               */
+compareFiles: procedure expose fn1 ft1 fm1 fn2 ft2 fm2 flags,
+  f1txt. f2txt. f1len f2len
+/* Load files and compare line by line with resync capabilities      */
 /*-------------------------------------------------------------------*/
-  if verbose > 0 then do
-    parse arg msg
-    say msg
+  'execio * diskr' fn1 ft1 fm1 '(stem' f1txt. ')'
+  if rc <> 0 then do
+    say "ERROR: Cannot read file 1:" fn1 ft1 fm1
+    exit 7
   end
-  return
- 
-/*-------------------------------------------------------------------*/
-VrbosMsg:
-/* issue message in verbose mode                                     */
-/*-------------------------------------------------------------------*/
-  if verbose > 1 then do
-    parse arg msg
-    call setColor "turq"
-    say msg
+  'execio * diskr' fn2 ft2 fm2 '(stem' f2txt. ')'
+  if rc <> 0 then do
+    say "ERROR: Cannot read file 2:" fn2 ft2 fm2
+    exit 8
+  end
+  f1len = f1txt.0
+  f2len = f2txt.0
+  if f1len = "" then f1len = 0
+  if f2len = "" then f2len = 0
+  i = 1
+  j = 1
+  do while (i <= f1len) & (j <= f2len)
+    if f1txt.i = f2txt.j then do /* move forward in both files */
+      i = i + 1
+      j = j + 1
+      iterate
+    end
+    diffStart_i = i           /* Lines differ - try to sync back up */
+    diffStart_j = j
+    found = 0
+    do lookahead = 0 to 10
+      if (i+lookahead <= f1len) then
+        ii = i + lookahead
+        if f1txt.ii = f2txt.j then do
+          diffEnd_i = i + lookahead - 1
+          diffEnd_j = j - 1
+          found = 1
+          leave
+        end
+      ii = i + lookahead
+      jj = j + lookahead
+      if (jj <= f2len) then
+        if f1txt.i = f2txt.jj then do
+          diffEnd_i = i - 1
+          diffEnd_j = j + lookahead - 1
+          found = 1
+          leave
+        end
+      if (ii <= f1len) & (jj <= f2len) then
+        if f1txt.ii = f2txt.jj then do
+          diffEnd_i = i + lookahead - 1
+          diffEnd_j = j + lookahead - 1
+          found = 1
+          leave
+        end
+    end
+    if found = 0 then do  /* can't resync: remaining lines different */
+      diffEnd_i = f1len
+      diffEnd_j = f2len
+    end
+    if diffStart_i = diffEnd_i then
+      say diffStart_i"c"diffStart_j
+    else
+      say diffStart_i","diffEnd_i"c"diffStart_j","diffEnd_j
+    do k = diffStart_i to diffEnd_i
+      if k <= f1len then
+        say "<" f1txt.k
+    end
+    say "---"
+    call setColor "red"
+    do k = diffStart_j to diffEnd_j
+      if k <= f2len then
+        say ">" f2txt.k
+    end
     call setColor "green"
+    diffs = 1
+    i = diffEnd_i + 1
+    j = diffEnd_j + 1
   end
-  return
  
-/*-------------------------------------------------------------------*/
-VVrbosMsg:
-/* issue message in very verbose mode                                */
-/*-------------------------------------------------------------------*/
-  if verbose > 2 then do
-    parse arg msg
-    call setColor "turq"
-    say msg
-    call setColor "green"
+  if i <= f1len then do              /* Handle remaining lines */
+    say i","f1len"c"j-1
+    do k = i to f1len
+      say "<" f1txt.k
+    end
+    say "---"
+    diffs = 1
   end
-  return
- 
-/*-------------------------------------------------------------------*/
-checkSameLines:
-/* Print nuork                                                       */
-/*-------------------------------------------------------------------*/
-if sameLines <> 0 then do                  /* show # of same lines */
-  call setColor "yellow"
-  call regMsg "     ..." sameLines "identical lines ..."
-  call setColor "green"
-  sameLines = 0                            /* reset counter */
-end
+  else if j <= f2len then do
+    say i-1"c"j","f2len
+    say "---"
+    do k = j to f2len
+      say ">" f2txt.k
+    end
+    diffs = 1
+  end
 return
  
 /*-------------------------------------------------------------------*/
-compareFiles:
-/* Do the work                                                       */
+usage:
+/* Display help                                                      */
 /*-------------------------------------------------------------------*/
-/*trace i*/
-execio '*' diskr fn1 ft1 fm1 '(stem' f1text. ')'
-execio '*' diskr fn2 ft2 fm2 '(stem' f2text. ')'
-f1len = f1text.0
-f2len = f2text.0
-numChars = LENGTH(MAX(f1len, f2len))    /* number of chars in tests */
- 
-/* show file names and line count in color */
-spaces = COPIES(" ", numChars)
-call regMsg spaces "<" fn1 ft1 fm1 "has" f1len "lines"
-call setColor "red"
-call regMsg spaces ">" fn2 ft2 fm2 "has" f2len "lines"
-call setColor "green"
-call regMsg " "
- 
-sameLines = 0
-mismatched = "no"
-i = 1                                    /* file 1 counter */
-j = 1                                    /* file 2 counter */
-do while i <= f1len | j <= f2len
-  if i > f1len then do                   /* file 1 is finished */
-    call VrbosMsg "file 1 is finished"
-    call checkSameLines
-    msg = FORMAT(j, numChars) ">" STRIP(f2text.j)
-    call setColor "red"
-    call regMsg msg
-    call setColor "green"
-    j = j + 1
-    iterate
-  end
-  if j > f2len then do                   /* file 2 is finished */
-    call VrbosMsg "file 2 is finished"
-    call checkSameLines
-    msg = FORMAT(i, numChars) ">" STRIP(f1text.i)
-    call regMsg msg
-    i = i + 1
-    iterate
-  end
-  if f1text.i <> f2text.j then do  /* lines are different */
-    call VVrbosMsg "File1:"i "and file2:"j "differ"
-    diffs = diffs + 1
-    call checkSameLines
-    mismatched = "yes"
-    found = "no"
-    do ii = i+1 to i+3                    /* try to resync for 3 lines */
-      do jj = j to j+3                    /* and 3 lines of file 2 */
-        call VVrbosMsg "ii:" ii "f1text.ii:" STRIP(f1text.ii)
-        call VVrbosMsg "jj:" jj "f1text.jj:" STRIP(f1text.jj)
-        if f1text.ii == f2text.jj then do /* lines match */
-          call VVrbosMsg "synced back up - ii:" ii "jj:" jj
-          if ii > jj then do              /* new lines in file 1 */
-            newLines = ii - jj
-            call VVrbosMsg "file 1 new lines:" newLines
-            do k = 0 to newLines - 1
-              call regMsg FORMAT(i, numChars) "<" STRIP(f1text.i)
-              i = i + 1
-            end
-          end
-          else if jj > ii then do       /* new lines in file 2 */
-            newLines = jj - ii
-            call VVrbosMsg "file 2 new lines:" newLines
-            do k = 0 to newLines - 1
-              call setColor "red"
-              call regMsg FORMAT(i, numChars) ">" STRIP(f2text.j)
-              call setColor "green"
-              i = i + 1
-            end
-          end
-          else do                        /* only one line differs */
-            call VVrbosMsg "only one line differs i =" i "j =" j
-            call regMsg FORMAT(i, numChars) "<" STRIP(f1text.i)
-            call setColor "red"
-            call regMsg FORMAT(j, numChars) ">" STRIP(f2text.j)
-            call setColor "green"
-          end
-          i = ii
-          j = jj
-          found = "yes"
-          leave
-        end                              /* if synced */
-      end                                /* trying to resync */
-      if found == "yes" then leave
-    end                                  /* do ii */
-    if found == "no" then do
-      i = i + 1
-      j = j + 1
-    end
-  end
-  else do                              /* lines are the same */
-    call VVrbosMsg "File 1 line" i "and file 2 lin:"j "are the same"
-    if mismatched == "yes" then do
-      mismatched = "no"
-      if verbose > 1 then do
-        if i == j then
-          say "    --- resynchronized at line" i " ---"
-        else
-          say "    --- resynchronized at line" i "and line" j "  ---"
-      end
-    end
-    sameLines = sameLines + 1
-    call VVrbosMsg "incremented sameLines to" sameLines
-    i = i + 1
-    j = j + 1
-  end
-end
-return                             /* compareFiles() */
- 
-/*-------------------------------------------------------------------*/
-usage:                               /* give help                    */
-/*-------------------------------------------------------------------*/
-  say "Name : DIFF EXEC - compare two files"
-  say "Usage: diff fn1 ft1 fm1 fn2 ft2 fm2 ( flags"
-  say "Where: 'fn1 ft1 fm1' is the first file to compare"
-  say "       'fn2 ft2 fm2' is the second file to compare"
-  say "       '(flags'      havent been decided yet"
-  return                             /* usage() */
- 
+  say "Name : DIFF EXEC - Compare two files"
+  say "Usage: diff fn1 ft1 fm1 fn2 ft2 fm2 (flags)"
+  say "Where: 'fn1 ft1 fm1' is the first file"
+  say "       'fn2 ft2 fm2' is the second file"
+return
