@@ -2,13 +2,26 @@
 /* DIFF EXEC - Compare two files line by line                        */
 /*-------------------------------------------------------------------*/
 diffs = 0
+verbose = 1                          /* normal verbosity */
 parse arg args
 call parseArgs args                  /* parse arguments */
 call compareFiles                    /* compare files */
 exit diffs                           /* Return non-0 if files differ */
  
 /*-------------------------------------------------------------------*/
-parseArgs: procedure expose fn1 ft1 fm1 fn2 ft2 fm2 flags
+VrbosMsg: procedure expose verbose
+/* issue message in verbose mode                                     */
+/*-------------------------------------------------------------------*/
+if verbose > 1 then do
+  parse arg msg
+  call setColor "turq"
+  say msg
+  call setColor "green"
+end
+return                               /* vrbosMsg() */
+ 
+/*-------------------------------------------------------------------*/
+parseArgs: procedure expose fn1 ft1 fm1 fn2 ft2 fm2 flags verbose
 /* Parse input arguments                                             */
 /*-------------------------------------------------------------------*/
   parse upper arg fn1 ft1 fm1 fn2 ft2 fm2 extra '(' flags
@@ -45,7 +58,9 @@ parseArgs: procedure expose fn1 ft1 fm1 fn2 ft2 fm2 flags
     say "File 2" file2 "does not exist"
     exit 6
   end
-return                               /* DIFF EXEC */
+  if flags = "V" then                /* verbose mode */
+    verbose = 2
+return                               /* parseArgs() */
  
 /*-------------------------------------------------------------------*/
 setColor:
@@ -60,66 +75,94 @@ setColor:
  
 /*-------------------------------------------------------------------*/
 compareFiles: procedure expose fn1 ft1 fm1 fn2 ft2 fm2 flags,
-  f1txt. f2txt. f1len f2len
+  f1txt. f2txt. f1len f2len verbose diffs
 /* Load files and compare line by line with resync capabilities      */
 /*-------------------------------------------------------------------*/
   'execio * diskr' fn1 ft1 fm1 '(stem' f1txt. ')'
   if rc <> 0 then do
     say "ERROR: Cannot read file 1:" fn1 ft1 fm1
-    exit 7
+    exit rc
   end
   'execio * diskr' fn2 ft2 fm2 '(stem' f2txt. ')'
   if rc <> 0 then do
     say "ERROR: Cannot read file 2:" fn2 ft2 fm2
-    exit 8
+    exit rc
   end
   f1len = f1txt.0
   f2len = f2txt.0
   if f1len = "" then f1len = 0
   if f2len = "" then f2len = 0
+  call vrbosMsg "f1len:" f1len "f2len:" f2len
   i = 1
   j = 1
   do while (i <= f1len) & (j <= f2len)
-    if f1txt.i = f2txt.j then do /* move forward in both files */
+    if f1txt.i = f2txt.j then do /* lines match, move forward */
+      call vrbosMsg "Lines same for i:" i "and j:" j
       i = i + 1
       j = j + 1
       iterate
     end
-    diffStart_i = i           /* Lines differ - try to sync back up */
+    call vrbosMsg "Lines differ:"
+    call vrbosMsg "i:" i "f1txt.i:" f1txt.i
+    call vrbosMsg "j:" j "f2txt.j:" f2txt.j
+    diffStart_i = i
     diffStart_j = j
-    found = 0
-    do lookahead = 0 to 10
-      if (i+lookahead <= f1len) then
-        ii = i + lookahead
-        if f1txt.ii = f2txt.j then do
-          diffEnd_i = i + lookahead - 1
+    synced = 0
+    do ahead = 1 to 10               /* try to sync in next 10 lines */
+      if ii <= f1len then do         /* lines remain in file 1 */
+        ii = i + ahead
+        call vrbosMsg "Checking:"
+        call vrbosMsg "f1txt.ii:" f1txt.ii
+        call vrbosMsg "f2txt.j:" f2txt.j
+        if f1txt.ii = f2txt.j then do /* resynced */
+          call vrbosMsg "Resynced in file1 at line" ii
+          diffEnd_i = i + ahead - 1
           diffEnd_j = j - 1
-          found = 1
+          synced = 1
           leave
         end
-      ii = i + lookahead
-      jj = j + lookahead
-      if (jj <= f2len) then
+      end
+      call vrbosMsg "not synced up in file 1"
+      if jj <= f2len then do         /* lines remain in file 2 */
+        jj = j + ahead
+        call vrbosMsg "Checking:"
+        call vrbosMsg "f1txt.i:" f1txt.i
+        call vrbosMsg "f2txt.jj:" f2txt.jj
         if f1txt.i = f2txt.jj then do
+          call vrbosMsg "Resync by skipping ahead in file2 at line" jj
           diffEnd_i = i - 1
-          diffEnd_j = j + lookahead - 1
-          found = 1
+          diffEnd_j = j + ahead - 1
+          synced = 1
           leave
         end
-      if (ii <= f1len) & (jj <= f2len) then
+      end
+      call vrbosMsg "not synced up in file 2"
+      ii = i + ahead                 /* try to sync in both files */
+      jj = j + ahead
+      if (ii <= f1len) & (jj <= f2len) then do
+        call vrbosMsg "Checking:"
+        call vrbosMsg "f1txt.ii:" f1txt.ii
+        call vrbosMsg "f2txt.jj:" f2txt.jj
         if f1txt.ii = f2txt.jj then do
-          diffEnd_i = i + lookahead - 1
-          diffEnd_j = j + lookahead - 1
-          found = 1
+          call vrbosMsg "resynced in both files - ii:" ii "jj:" jj
+          diffEnd_i = i + ahead - 1
+          diffEnd_j = j + ahead - 1
+          synced = 1
           leave
         end
+      end
     end
-    if found = 0 then do  /* can't resync: remaining lines different */
+    if synced = 0 then do
+      call vrbosMsg "can't resync"
       diffEnd_i = f1len
       diffEnd_j = f2len
     end
-    if diffStart_i = diffEnd_i then
-      say diffStart_i"c"diffStart_j
+ 
+    /* Output difference block */
+    if diffStart_i > diffEnd_i then
+      say diffStart_i"c"diffStart_j","diffEnd_j
+    else if diffStart_j > diffEnd_j then
+      say diffStart_i","diffEnd_i"c"diffStart_j
     else
       say diffStart_i","diffEnd_i"c"diffStart_j","diffEnd_j
     do k = diffStart_i to diffEnd_i
@@ -137,20 +180,19 @@ compareFiles: procedure expose fn1 ft1 fm1 fn2 ft2 fm2 flags,
     i = diffEnd_i + 1
     j = diffEnd_j + 1
   end
- 
-  if i <= f1len then do              /* Handle remaining lines */
-    say i","f1len"c"j-1
+  if i <= f1len then do /* remaining lines in file 1 */
+    say i","f1len"d"
     do k = i to f1len
       say "<" f1txt.k
     end
-    say "---"
     diffs = 1
   end
-  else if j <= f2len then do
-    say i-1"c"j","f2len
-    say "---"
+  else if j <= f2len then do /* remaining lines in file 2 */
+    say i-1"a"j","f2len
     do k = j to f2len
+      call setColor "red"
       say ">" f2txt.k
+      call setColor "green"
     end
     diffs = 1
   end
@@ -164,4 +206,5 @@ usage:
   say "Usage: diff fn1 ft1 fm1 fn2 ft2 fm2 (flags)"
   say "Where: 'fn1 ft1 fm1' is the first file"
   say "       'fn2 ft2 fm2' is the second file"
+  say "       flags: can be 'V': verbose or 'S': silent"
 return
