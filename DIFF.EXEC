@@ -108,47 +108,21 @@ compareFiles: procedure expose fn1 ft1 fm1 fn2 ft2 fm2 flags,
     diffStart_i = i
     diffStart_j = j
     synced = 0
-    do ahead = 1 to 10               /* try to sync in next 10 lines */
-      if ii <= f1len then do         /* lines remain in file 1 */
-        ii = i + ahead
-        call vrbosMsg "Checking:"
-        call vrbosMsg "f1txt.ii:" f1txt.ii
-        call vrbosMsg "f2txt.j:" f2txt.j
-        if f1txt.ii = f2txt.j then do /* resynced */
-          call vrbosMsg "Resynced in file1 at line" ii
-          diffEnd_i = i + ahead - 1
-          diffEnd_j = j - 1
+    maxAhead = 10                    /* # lines to look ahead */
+    do a = 0 to maxAhead
+      do b = 0 to maxAhead
+        ii = i + a
+        jj = j + b
+        if ii > f1len then leave     /* past end of file1 */
+        if jj > f2len then leave     /* past end of file2 */
+        call vrbosMsg "comparing ii:" ii "f1txt.ii:" f1txt.ii
+        call vrbosMsg "     with jj:" jj "f2txt.jj:" f2txt.jj
+        if f1txt.ii = f2txt.jj then do  /* match */
+          new_i = ii
+          new_j = jj
           synced = 1
-          leave
-        end
-      end
-      call vrbosMsg "not synced up in file 1"
-      if jj <= f2len then do         /* lines remain in file 2 */
-        jj = j + ahead
-        call vrbosMsg "Checking:"
-        call vrbosMsg "f1txt.i:" f1txt.i
-        call vrbosMsg "f2txt.jj:" f2txt.jj
-        if f1txt.i = f2txt.jj then do
-          call vrbosMsg "Resync by skipping ahead in file2 at line" jj
-          diffEnd_i = i - 1
-          diffEnd_j = j + ahead - 1
-          synced = 1
-          leave
-        end
-      end
-      call vrbosMsg "not synced up in file 2"
-      ii = i + ahead                 /* try to sync in both files */
-      jj = j + ahead
-      if (ii <= f1len) & (jj <= f2len) then do
-        call vrbosMsg "Checking:"
-        call vrbosMsg "f1txt.ii:" f1txt.ii
-        call vrbosMsg "f2txt.jj:" f2txt.jj
-        if f1txt.ii = f2txt.jj then do
-          call vrbosMsg "resynced in both files - ii:" ii "jj:" jj
-          diffEnd_i = i + ahead - 1
-          diffEnd_j = j + ahead - 1
-          synced = 1
-          leave
+          call vrbosMsg "Lines match file1:" ii "file2:" jj
+          leave a                    /* exit both loops */
         end
       end
     end
@@ -156,6 +130,10 @@ compareFiles: procedure expose fn1 ft1 fm1 fn2 ft2 fm2 flags,
       call vrbosMsg "can't resync"
       diffEnd_i = f1len
       diffEnd_j = f2len
+    end
+    else do
+      i = new_i
+      j = new_j
     end
  
     /* Output difference block */
