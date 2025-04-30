@@ -71,6 +71,8 @@ if files.0 = 0 then do               /* file not found */
 end
 if cmd = "tail" then do              /* show bottom of file */
   startLine = lines.0 - numLines
+  if startLine <= 0 then             /* invalid line */
+    startLine = 1                    /* show entire file */
   if files.0 = 1 then                /* do not print file name */
     "TYPE" files.1 startLine         /* show last lines */
   else do i = 1 to files.0           /* for all files */

@@ -7,7 +7,8 @@
 parse upper arg arg1 rest            /* get args in upper case */
 if arg1 = "?" | arg1 = "-H" | arg1 = "" then
   call help
-address CMS 'HEAD' arg1 rest '(TAIL'      /* Call HEAD with (TAIL arg */
+say 'HEAD' "'"arg1"'" rest '(TAIL'       /* Call HEAD with (TAIL arg */
+'HEAD' "'"arg1"'" rest '(TAIL'       /* Call HEAD with (TAIL arg */
 exit                                 /* all done */
  
 /*-------------------------------------------------------------------*/
@@ -15,8 +16,8 @@ help:
 /* Give help                                                         */
 /*-------------------------------------------------------------------*/
 say "Name:  TAIL EXEC - output the last part of file(s)"
-say "Usage: TAIL [-n] fn ft [fm]"
+say "Usage: TAIL [-n] fn ft [fm] ..."
 say "Where: 'fn ft' is the file name and type"
-say "     : 'fm' is the file mode (default A)"
+say "       'fm' is the file mode (default A)"
 exit 2
  
