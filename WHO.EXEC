@@ -52,8 +52,11 @@ processLine: procedure expose userIDs. userNum
   end
   return
  
-sortOutput: /* sort userIDs stem variable alphabetically */
-  do i = 1 to userNum - 2               /* Bubble sort */
+/*-------------------------------------------------------------------*/
+sortOutput:
+/* sort userIDs stem variable alphabetically                         */
+/*-------------------------------------------------------------------*/
+  do i = 1 to userNum - 2            /* bubble sort */
     do j = 1 to userNum - 2 - i
       k = j + 1
       if userIDs.j > userIDs.k then do
@@ -63,18 +66,26 @@ sortOutput: /* sort userIDs stem variable alphabetically */
       end
     end
   end
-  return
+return                               /* sortOutput() */
  
+/*-------------------------------------------------------------------*/
 printOutput:
+/* print list of user IDs                                            */
+/*-------------------------------------------------------------------*/
+  numUsers = 0
   do i = 1 to userNum - 1
     if LENGTH(filter) <> 0 then do
       userID = WORD(userIDs.i, 1)    /* get user ID */
       if POS(filter, userID) <> 0 then do /* matches filter */
+        numUsers = numUsers + 1
         say userIDs.i
       end
     end
     else                             /* no filter applied */
       say userIDs.i
   end
-  return
+  if numUsers = 0 then               /* no filter */
+    numUsers = userNum - 1
+  say "Total:    " numUsers
+return                               /* printOutput() */
  

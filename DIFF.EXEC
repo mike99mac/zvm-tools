@@ -1,5 +1,6 @@
 /*-------------------------------------------------------------------*/
 /* DIFF EXEC - Compare two files line by line                        */
+/*             using the Myers diff algorithm                        */
 /*-------------------------------------------------------------------*/
 diffs = 0
 verbose = 1                          /* normal verbosity */
