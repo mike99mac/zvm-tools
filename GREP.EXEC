@@ -56,15 +56,15 @@ parseArgs: procedure expose numArgs numbers numFiles fn ft fm debug,
   if fm = "" then                    /* default file mode is A */
     fm = "A"
  
-  /* set and parse z/VM flags */
+  /* parse Linux and z/VM flags */
   upper flags                        /* flags to upper case */
   chkCase = "yes"                    /* case must match */
   debug = "no"
   doTrace = "no"
   inverse = "no"                     /* show inverse output */
   numbers = "no"                     /* show line numbers */
-  call parseFlags                    /* parse (vmFlags */
-  call parseLxFlags                  /* parse -LinuxFlags */
+  call parseVMflags                  /* parse '(vmFlags' */
+  call parseLxFlags                  /* parse '-LinuxFlags' */
   if doTrace = "yes" then            /* turn trace on */
     trace i
   call debugMsg "chkCase:" chkCase
@@ -74,58 +74,6 @@ parseArgs: procedure expose numArgs numbers numFiles fn ft fm debug,
   call debugMsg "inverse:" inverse
   upper fn ft fm                     /* upper case file spec */
 return                               /* parseArgs() */
- 
-/*-------------------------------------------------------------------*/
-searchFiles: procedure expose numbers fn ft fm debug chkCase inverse,
-  numbers ptrn
-/* Search all files for pattern supplied                             */
-/*-------------------------------------------------------------------*/
-  'PIPE COMMAND LISTFILE' fn ft fm '| STEM files.'
-  retVal = rc
-  if retVal <> 0 then do               /* error */
-    if files.0 <> 0 then               /* there is an error message */
-      say "ERROR:" files.1
-    exit retVal
-  end
-  numFiles = files.0
-  retVal = 1                         /* assume no match */
-  do i = 1 to numFiles               /* loop through files */
-    parse var files.i nextFN nextFT nextFM . /* remove spaces */
-    'PIPE COMMAND TYPE' files.i '| STEM lines.'
-    numLines = lines.0 - 2           /* 1st & last lines are blank */
-    call debugMsg "file:" nextFN nextFT nextFM "has" numLines "lines"
-    do j = 2 to lines.0 - 1          /* first line is blank */
-      call debugMsg "line" j":" lines.j
-      if regex(lines.j) then do      /* match */
-        if inverse = "no" then do
-          call prtLn j-1 nextFN nextFT nextFM lines.j
-          retVal = 0                 /* a hit */
-        end
-      end
-      else do                        /* no match */
-        if inverse = "yes" then do
-          call prtLn j-1 nextFN nextFT nextFM lines.j
-          retVal = 0                 /* a non-hit */
-        end
-      end
-    end
-  end
-exit retVal                          /* searchFiles() */
- 
-/*-------------------------------------------------------------------*/
-prtLn: procedure expose numbers numFiles
-/* print a line of output with or without the line number            */
-/*-------------------------------------------------------------------*/
-  parse arg lineNum fn ft fm theLine
-  if numFiles = 1 then               /* do not show file name */
-    fileSpec = ""
-  else                               /* show file name */
-    fileSpec = fn ft fm":"
-  if numbers = "yes" then            /* include line number */
-    say fileSpec||lineNum":"theLine
-  else                               /* no line number */
-    say fileSpec||theLine
-return                               /* prtLn() */
  
 /*-------------------------------------------------------------------*/
 parseLxFlags: procedure expose chkCase debug doTrace lxFlags inverse,
@@ -164,7 +112,7 @@ parseLxFlags: procedure expose chkCase debug doTrace lxFlags inverse,
 return                               /* parseLxFlags() */
  
 /*-------------------------------------------------------------------*/
-parseFlags: procedure expose chkCase debug doTrace VMflags inverse,
+parseVMflags: procedure expose chkCase debug doTrace VMflags inverse,
  numbers
 /* parse flags passed in, if any                                     */
 /*-------------------------------------------------------------------*/
@@ -191,7 +139,59 @@ parseFlags: procedure expose chkCase debug doTrace VMflags inverse,
       end
     end
   end
-return                               /* parseFlags() */
+return                               /* parseVMflags() */
+ 
+/*-------------------------------------------------------------------*/
+searchFiles: procedure expose numbers fn ft fm debug chkCase inverse,
+  numbers ptrn
+/* Search all files for pattern supplied                             */
+/*-------------------------------------------------------------------*/
+  'PIPE COMMAND LISTFILE' fn ft fm '| STEM files.'
+  retVal = rc
+  if retVal <> 0 then do               /* error */
+    if files.0 <> 0 then               /* there is an error message */
+      say "ERROR:" files.1
+    exit retVal
+  end
+  numFiles = files.0
+  retVal = 1                         /* assume no match */
+  do i = 1 to numFiles               /* loop through files */
+    parse var files.i nextFN nextFT nextFM . /* remove spaces */
+    'PIPE COMMAND TYPE' files.i '| STEM lines.'
+    numLines = lines.0 - 2           /* 1st & last lines are blank */
+    call debugMsg "file:" nextFN nextFT nextFM "has" numLines "lines"
+    do j = 2 to lines.0 - 1          /* first line is blank */
+      call debugMsg "line" j":" lines.j
+      if regex(lines.j) then do      /* line matches */
+        if inverse = "no" then do
+          call prtLn j-1 nextFN nextFT nextFM lines.j
+          retVal = 0                 /* a hit */
+        end
+      end
+      else do                        /* no match */
+        if inverse = "yes" then do
+          call prtLn j-1 nextFN nextFT nextFM lines.j
+          retVal = 0                 /* a non-hit */
+        end
+      end
+    end
+  end
+exit retVal                          /* searchFiles() */
+ 
+/*-------------------------------------------------------------------*/
+prtLn: procedure expose numbers numFiles
+/* print a line of output with or without the line number            */
+/*-------------------------------------------------------------------*/
+  parse arg lineNum fn ft fm theLine
+  if numFiles = 1 then               /* do not show file name */
+    fileSpec = ""
+  else                               /* show file name */
+    fileSpec = fn ft fm":"
+  if numbers = "yes" then            /* include line number */
+    say fileSpec||lineNum":"theLine
+  else                               /* no line number */
+    say fileSpec||theLine
+return                               /* prtLn() */
  
 /*-------------------------------------------------------------------*/
 debugMsg: procedure expose debug lines.
@@ -252,18 +252,33 @@ regex: procedure expose chkCase debug numbers ptrn
       if SUBSTR(ptrn, i + 1, 1) <> "*" then do /* no '.*' */
         i = i + 1
         j = j + 1
-        iterate
+        iterate                        /* always matches */
       end
       else do                          /* found '.*' */
-        i = i + 1                      /* skip '*' */
-        ptrnCh = SUBSTR(ptrn, i + 1, 1)
-        lineCh = SUBSTR(line, j + 1, 1)
-        do while lineCh <> ptrnCh
-          j = j + 1
-          if j > lineLen then do       /* no match */
-            return 0
+        i = i + 2                      /* skip over '.' and '*' */
+        if i > ptrnLen then            /* nothing after '.*' */
+          return 1
+        nextPtrnCh = SUBSTR(ptrn, i, 1)
+        do while j <= lineLen
+          lineCh = SUBSTR(line, j, 1)
+          if lineCh = nextPtrnCh then do
+            saveI = i
+            saveJ = j
+            match = 1
+            k = i
+            l = j
+            do while k <= ptrnLen & l <= lineLen
+              if SUBSTR(ptrn, k, 1) <> SUBSTR(line, l, 1) then do
+                match = 0
+                leave
+              end
+              k = k + 1
+              l = l + 1
+            end
+            if match = 1 then
+              return 1
           end
-          lineCh = SUBSTR(line, j + 1, 1)
+          j = j + 1
         end
       end
     end
