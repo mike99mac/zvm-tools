@@ -1,0 +1,7 @@
+/*-------------------------------------------------------------------*/
+/* MYLOGON EXEC - save logon info to command history file            */
+/*-------------------------------------------------------------------*/
+dashes = "---------------------"
+timestamp = DATE('N') TIME('N')
+line = "#" dashes "LOGON:" DATE('N') TIME('N') dashes
+'EXECIO 1 DISKW COMMAND HISTORY A (FINIS STRING' line

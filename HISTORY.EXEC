@@ -1,0 +1,26 @@
+/*-------------------------------------------------------------------*/
+/* HISTORY EXEC - View command history                               */
+/* Must be set up with LOGON and LOGOFF hooks:                       */
+/* - LOGON hooks:                                                    */
+/*   - Call MYLOGON EXEC at logon to record time (in PROFILE EXEC)   */
+/* - LOGOFF hooks:                                                   */
+/*   - Make LOGOFF an alias to MYLOGOFF (don't do: '#CP LOGOFF')     */
+/*   - MYLOGOFF EXEC called to add cmd history & record logoff time  */
+/*-------------------------------------------------------------------*/
+parse upper arg filter .
+histFile = "COMMAND HISTORY A"
+tempFile = "TEMP HISTORY A5"
+'PIPE CMS ESTATE' histFile
+if rc = 0 then                       /* history file exists */
+  'COPY' histFile tempFile '(REP'    /* get previous cmds */
+'PIPE CP QUERY RETRIEVE BUFFERS',    /* get history */
+'| NLOCATE "Position Contents"',     /* remove header */
+'| SPECS 10-*',                      /* remove first column */
+'| TRANSLATE',                       /* fold to upper case */
+'|>>' tempFile                       /* append to temp file */
+if filter = '' then                  /* no filter */
+  'TYPE' tempFile
+else                                 /* apply search filter */
+  'PIPE <' tempFile '| LOCATE /'filter'/ | CONSOLE'
+exit
+ 

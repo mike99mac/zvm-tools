@@ -1,0 +1,17 @@
+/*-------------------------------------------------------------------*/
+/* MYLOGOFF EXEC - save command history, add timestame then logoff   */
+/*-------------------------------------------------------------------*/
+parse arg args
+ 
+/* add list of commands for this session to command history */
+'PIPE CP QUERY RETRIEVE BUFFERS',    /* get command history */
+'| NLOCATE "Position Contents"',     /* remove header */
+'| SPECS 10-*',                      /* remove position column */
+'| TRANSLATE',                       /* fold to upper case */
+'|>> COMMAND HISTORY A'              /* append to history file */
+ 
+/* add logoff timestamp, then log off  */
+dashes = "---------------------"
+line = "#" dashes "LOGOFF:" DATE('N') TIME('N') dashes
+'EXECIO 1 DISKW COMMAND HISTORY A (FINIS STRING' line
+'CP LOGOFF' args                     /* logoff with any args */
