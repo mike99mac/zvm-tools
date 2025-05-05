@@ -18,8 +18,11 @@ The following tools for z/VM are in this repository:
     | DIFF     EXEC    | Compare files line by line                      |
     | GREP     EXEC    | Search for patterns in files                    |
     | HEAD     EXEC    | Output the first part of files                  |
+    | HISTORY  EXEC    | Display list of commands previously run         |
     | MAN      EXEC    | Give help on CMS/CP/XEDIT commands              |
     | MKVMARC  EXEC    | Make a VMARC file of these EXECs/XEDIT macros   |
+    | MYLOGOFF EXEC    | Update command history at logoff time           |
+    | MYLOGON  EXEC    | Update command history at logon time            |
     | QA       EXEC    | Run QUERY ACCESSED                              |
     | RFN      EXEC    | Rename file changing only file name             |
     | RFT      EXEC    | Rename file changing only file type             |
@@ -374,6 +377,57 @@ Where: 'fn ft' is the file name and type
      : -<n> is number of lines to show (default 10) 
 ```
 
+### HISTORY EXEC
+The ``HISTORY EXEC`` displays all commands previously issued, or applies a filter to them.
+
+Here is the help:
+```
+history -h                                    
+Name:  HISTORY EXEC - Show the command history
+Usage: HISTORY [filter]                       
+Where: 'filter' is an optional search filter  
+```
+
+Hooks must be added to trap logon and logoff time.  Perform the following steps:
+- Call the MYLOGON EXEC at logon time.
+```
+tail -3 profile exec                                                
+                                                                     
+'SYN SYN'                            /* set synonyms */              
+'EXEC MYLOGON'                       /* save logon time to history */
+'SP CONS START TO' userid()          /* spool console */            
+```
+                                                                                                                                                   
+- Call MYLOGOFF at logoff time. Setting this in the ``SYN SYNONYM`` file sets LOGOFF to call it. If you logoff with ``#CP LOGOFF`` MYLOGOFF will not be called and you lose the command history for that session. 
+```
+tail -2 syn synonym                                
+MYLOGOFF LOG                                                        
+HISTORY  HIS                   
+```
+
+Examples:
+
+- Run ``HISTORY`` command
+history                                                                        
+                                                                               
+# --------------------- LOGON: 5 May 2025 12:58:48 ---------------------        
+HISTORY                                                                        
+Q T                                                                            
+IND                                                                            
+LOG HO                                                                          
+# --------------------- LOGOFF: 5 May 2025 12:59:12 ---------------------      
+# --------------------- LOGON: 5 May 2025 12:59:19 ---------------------        
+HISTORY                                                                        
+                                                                               
+- Run ``HISTORY`` searching for "LOG"                                        
+history log                                                                    
+# --------------------- LOGON: 5 May 2025 12:58:48 ---------------------        
+LOG HO                                                                          
+# --------------------- LOGOFF: 5 May 2025 12:59:12 ---------------------      
+# --------------------- LOGON: 5 May 2025 12:59:19 ---------------------        
+HISTORY LOG    
+
+
 ### MAN EXEC
 The ``MAN EXEC`` calls help for the requested command.  
 
@@ -393,10 +447,10 @@ For example, ``man q da`` takes you to the ``CP QUERY DASD`` help screen, and ``
 ### MKVMARC EXEC
 The ``MKVMARC EXEC`` creates the z/VM file ``ZVMTOOLS VMARC`` from all of these REXX EXECs and XEDIT macros.
 
-### QA.EXEC
+### QA EXEC
 The ``QA EXEC`` simply calls ``QUERY ACCESSED`` to save keystrokes. 
 
-### RFN.EXEC
+### RFN EXEC
 The ``RFN EXEC`` renames a file only changing the file name. 
 
 Here is the help:
@@ -410,7 +464,7 @@ Where: 'fn2' is the new file name
 
 If you want to rename the file name of a file to ``RFNOLD`` in FILELIST, you would simply type ``RFN RFNOLD`` in front of the file.
 
-### RFT.EXEC
+### RFT EXEC
 The `` EXEC`` renames a file only changing the file type.
 
 Here is the help:
@@ -422,7 +476,7 @@ Where: 'ft2' is the new file type
      : 'fn1 ft1 fm1' is the source file                
 ```
 
-### RM.EXEC
+### RM EXEC
 The ``RM EXEC`` allows wild cards when erasing files.
 
 Here is the help:
@@ -433,7 +487,7 @@ Usage: rm fn [ft [fm]]
 Where: fn, ft or fm can be '*' for all files    
 ```
 
-### SPC.EXEC
+### SPC EXEC
 The ``SPC EXEC`` closes your console and sends it to the reader with a unique timestamp. 
 
 Here is the help:
@@ -456,7 +510,7 @@ CON85431 20250208 A1 created
 File CON85431 20250208 A1 received from MIKEMAC at SNAVM4 
 ```
 
-### SSICMD.EXEC
+### SSICMD EXEC
 The ``SSICMD EXEC`` runs a CP command on all members of a z/VM SSI cluster. 
 
 Here is the help:
@@ -480,7 +534,7 @@ Where: 'fn ft' is the file name and type
      : -<n> is number of lines to show (default 10) 
 ```
 
-### WC.EXEC
+### WC EXEC
 The ``WC EXEC`` counts lines, words and bytes in one or more files. 
 
 Here is the help:
@@ -490,7 +544,7 @@ Name: SSICMD EXEC - Issue a CP command on all SSI members
 Usage: SSICMD <CPcmd>                                         
 ```
 
-### WHICH.EXEC
+### WHICH EXEC
 The ``WHICH EXEC`` resolves and fully qualifies CMS, CP and XEDIT commands.
 
 Here is the help:
@@ -521,7 +575,7 @@ which q scale
 QUERY SCALE is a XEDIT command
 ``` 
 
-### WHO.EXEC
+### WHO EXEC
 The ``WHO EXEC`` takes the output of ``QUERY NAMES``, sorts it and shows it one virtual machine per line.  It also allows for a search pattern. 
 
 Here is an example of using it:
