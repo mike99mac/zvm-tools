@@ -408,6 +408,7 @@ HISTORY  HIS
 Examples:
 
 - Run ``HISTORY`` command
+```
 history                                                                        
                                                                                
 # --------------------- LOGON: 5 May 2025 12:58:48 ---------------------        
@@ -418,15 +419,17 @@ LOG HO
 # --------------------- LOGOFF: 5 May 2025 12:59:12 ---------------------      
 # --------------------- LOGON: 5 May 2025 12:59:19 ---------------------        
 HISTORY                                                                        
+```
                                                                                
 - Run ``HISTORY`` searching for "LOG"                                        
+```
 history log                                                                    
 # --------------------- LOGON: 5 May 2025 12:58:48 ---------------------        
 LOG HO                                                                          
 # --------------------- LOGOFF: 5 May 2025 12:59:12 ---------------------      
 # --------------------- LOGON: 5 May 2025 12:59:19 ---------------------        
 HISTORY LOG    
-
+```
 
 ### MAN EXEC
 The ``MAN EXEC`` calls help for the requested command.  
