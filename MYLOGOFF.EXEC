@@ -11,7 +11,7 @@ parse arg args
 '|>> COMMAND HISTORY A'              /* append to history file */
  
 /* add logoff timestamp, then log off  */
-dashes = "---------------------"
+dashes = "--------------------"
 line = "#" dashes "LOGOFF:" DATE('N') TIME('N') dashes
 'EXECIO 1 DISKW COMMAND HISTORY A (FINIS STRING' line
 'CP LOGOFF' args                     /* logoff with any args */
