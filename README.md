@@ -468,7 +468,7 @@ Where: 'fn2' is the new file name
 If you want to rename the file name of a file to ``RFNOLD`` in FILELIST, you would simply type ``RFN RFNOLD`` in front of the file.
 
 ### RFT EXEC
-The `` EXEC`` renames a file only changing the file type.
+The ``RFT EXEC`` renames a file only changing the file type.
 
 Here is the help:
 ```
@@ -604,8 +604,6 @@ Is it just me, or does the stock ``FILELIST`` command *not* have an option to so
 
 The ``PROFFLST XEDIT`` macro sets PF10 to *Sort by name* to the ``FILELIST`` command.
 
-If that could be added to z/VM, this would not be needed. 
-
 ### PROFILE.XEDIT     
 The ``PROFILE XEDIT`` macro is a slightly modified copy of the one on the ``MAINT 191`` disk. It's the *REAL THING*. 
 
@@ -614,14 +612,12 @@ There is a compressed file of all the EXECs and XEDIT macros in the file ``ZVMTO
 
 The ``VMARC`` tool to decompress it does not ship with z/VM. If you don't have it already, it has to be installed:
 
-
 ### TO DO
 #### Possible new EXECs:
 
     +------------------+-------------------------------------------------+
     | File             | Description                                     |
     |------------------|-------------------------------------------------|
-    | HISTORY  EXEC    | Show previous commands run                      |
     | LOCATE   EXEC    | search for files on all CMS disks and SFS's     |
     +------------------+-------------------------------------------------+
 
